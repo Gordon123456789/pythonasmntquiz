@@ -235,3 +235,40 @@ start_button = tk.Button(
 
 start_button.pack(pady=15)
 
+
+def load_question():
+
+    choice.set(-1)
+
+
+    question = questions[current_question]
+
+
+    progress_label.config(
+        text="Question " + str(current_question + 1) + " of " + str(len(questions))
+    )
+
+    progress_label.pack(pady=10)
+
+
+    question_label.config(
+        text=question["question"]
+    )
+
+    question_label.pack(pady=20)
+
+
+    for i in range(3):
+
+        buttons[i].config(
+            text=question["options"][i]
+        )
+
+        buttons[i].pack(
+            anchor="w",
+            padx=150
+        )
+
+
+    next_button.pack(pady=20)
+
