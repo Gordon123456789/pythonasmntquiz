@@ -189,6 +189,15 @@ question_label = tk.Label(
 )
 
 
+# ADDED FOR QUESTION PROGRESS
+# This label will display which question the user is on.
+progress_label = tk.Label(
+    root,
+    text="",
+    font=("Arial", 12)
+)
+
+
 # answer variable
 
 # IntVar is used by Tkinter to store which
@@ -311,6 +320,15 @@ def load_question():
 
     # Get the current question from the questions list.
     question = questions[current_question]
+
+
+    # ADDED FOR QUESTION PROGRESS
+    # Display the current question number.
+    progress_label.config(
+        text="Question " + str(current_question + 1) + " of " + str(len(questions))
+    )
+    
+    progress_label.pack(pady=10)
 
 
     # Change the question label to display
@@ -460,6 +478,11 @@ def show_results():
 
     # Hide the Next button.
     next_button.pack_forget()
+
+
+    # ADDED FOR QUESTION PROGRESS
+    # Hide the question progress when the quiz finishes.
+    progress_label.pack_forget()
 
 
     # Display the disclaimer.
