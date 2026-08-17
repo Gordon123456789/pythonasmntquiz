@@ -103,6 +103,11 @@ score = 0
 current_question = 0
 
 
+# ADDED FOR BACK BUTTON
+# This stores the answers the user has already selected.
+answer_history = []
+
+
 # These variables store the user's details.
 user_name = ""
 user_age = 0
@@ -358,6 +363,32 @@ def load_question():
     next_button.pack(pady=20)
 
 
+    # ADDED FOR BACK BUTTON
+    # Show the Back button after the first question.
+    if current_question > 0:
+        back_button.pack(pady=20)
+    else:
+        back_button.pack_forget()
+
+
+# ADDED FOR BACK BUTTON
+# This function moves the user back to the previous question.
+def back_question():
+
+    global score
+    global current_question
+
+    if current_question > 0:
+
+        previous_answer = answer_history.pop()
+
+        score -= questions[current_question - 1]["scores"][previous_answer]
+
+        current_question -= 1
+
+        load_question()
+
+
 # next question function
 
 # This function runs when the user presses Next.
@@ -391,6 +422,11 @@ def next_question():
     # The scores list tells us how many points
     # that option is worth.
     score += questions[current_question]["scores"][choice.get()]
+
+
+    # ADDED FOR BACK BUTTON
+    # Store the user's answer so it can be removed if they go back.
+    answer_history.append(choice.get())
 
 
     # Move to the next question.
@@ -485,6 +521,11 @@ def show_results():
     progress_label.pack_forget()
 
 
+    # ADDED FOR BACK BUTTON
+    # Hide the Back button when the quiz finishes.
+    back_button.pack_forget()
+
+
     # Display the disclaimer.
     disclaimer.config(
         text="For educational purposes only. Not financial advice."
@@ -514,6 +555,21 @@ next_button.pack(pady=20)
 # Hide the Next button until the user
 # has entered their details.
 next_button.pack_forget()
+
+
+# ADDED FOR BACK BUTTON
+# Create the Back button.
+back_button = tk.Button(
+    root,
+    text="Back",
+    command=back_question,
+    font=("Arial", 12)
+)
+
+
+# ADDED FOR BACK BUTTON
+# Hide the Back button until the user reaches question 2.
+back_button.pack_forget()
 
 
 # disclaimer
