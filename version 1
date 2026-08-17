@@ -69,3 +69,84 @@ questions = [
         "scores": [1, 2, 3]
     }
 ]
+
+
+score = 0
+
+
+current_question = 0
+
+
+user_name = ""
+user_age = 0
+
+
+root = tk.Tk()
+
+
+root.title("Investment Recommendation Quiz")
+
+
+root.geometry("600x400")
+
+
+title = tk.Label(
+    root,
+    text="Investment Recommendation Quiz",
+    font=("Arial", 20)
+)
+
+
+title.pack(pady=20)
+
+
+name_label = tk.Label(
+    root,
+    text="Enter your name:",
+    font=("Arial", 12)
+)
+
+name_label.pack()
+
+
+name_entry = tk.Entry(
+    root,
+    font=("Arial", 12)
+)
+
+name_entry.pack(pady=5)
+
+
+age_label = tk.Label(
+    root,
+    text="Enter your age:",
+    font=("Arial", 12)
+)
+
+age_label.pack()
+
+
+age_entry = tk.Entry(
+    root,
+    font=("Arial", 12)
+)
+
+age_entry.pack(pady=5)
+
+
+question_label = tk.Label(
+    root,
+    text="",
+    font=("Arial", 15),
+    wraplength=500
+)
+
+
+progress_label = tk.Label(
+    root,
+    text="",
+    font=("Arial", 12)
+)
+
+
+choice = tk.IntVar(value=-1)
