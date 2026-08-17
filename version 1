@@ -304,3 +304,96 @@ def next_question():
 
         show_results()
 
+
+def show_results():
+
+    if score <= 7:
+
+        result = (
+            "Risk Profile: Conservative\n\n"
+
+            "You prefer lower levels of risk.\n\n"
+
+            "Suggested investments:\n"
+            "- Savings accounts\n"
+            "- Term deposits\n"
+            "- Bonds"
+        )
+
+
+    elif score <= 11:
+
+        result = (
+            "Risk Profile: Moderate\n\n"
+
+            "You are comfortable with some risk.\n\n"
+
+            "Suggested investments:\n"
+            "- Index funds\n"
+            "- Balanced funds\n"
+            "- Bonds"
+        )
+
+
+    else:
+
+        result = (
+            "Risk Profile: Growth\n\n"
+
+            "You are comfortable with higher risk.\n\n"
+
+            "Suggested investments:\n"
+            "- Growth ETFs\n"
+            "- Shares\n"
+            "- Global index funds"
+        )
+
+
+    question_label.config(
+        text="Results for " + user_name + "\n\n" + result
+    )
+
+
+    progress_label.pack_forget()
+
+
+    for button in buttons:
+        button.pack_forget()
+
+
+    next_button.pack_forget()
+
+
+    disclaimer.config(
+        text="For educational purposes only. Not financial advice."
+    )
+
+
+next_button = tk.Button(
+    root,
+
+    text="Next",
+
+    command=next_question,
+
+    font=("Arial", 12)
+)
+
+
+next_button.pack(pady=20)
+
+
+next_button.pack_forget()
+
+
+disclaimer = tk.Label(
+    root,
+    text="",
+    font=("Arial", 9)
+)
+
+
+disclaimer.pack()
+
+
+root.mainloop()
