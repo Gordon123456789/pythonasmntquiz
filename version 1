@@ -150,3 +150,24 @@ progress_label = tk.Label(
 
 
 choice = tk.IntVar(value=-1)
+
+buttons = []
+
+
+for i in range(3):
+
+    button = tk.Radiobutton(
+        root,
+
+        text="",
+
+        variable=choice,
+
+        value=i,
+
+        font=("Arial", 12)
+    )
+
+
+    buttons.append(button)
+
