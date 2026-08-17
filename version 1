@@ -272,3 +272,35 @@ def load_question():
 
     next_button.pack(pady=20)
 
+
+def next_question():
+
+    global score
+    global current_question
+
+
+    if choice.get() == -1:
+
+        messagebox.showwarning(
+            "No Answer",
+            "Please select an answer."
+        )
+
+
+        return
+
+
+    score += questions[current_question]["scores"][choice.get()]
+
+
+    current_question += 1
+
+
+    if current_question < len(questions):
+
+        load_question()
+
+    else:
+
+        show_results()
+
