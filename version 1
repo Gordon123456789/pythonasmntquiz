@@ -171,3 +171,67 @@ for i in range(3):
 
     buttons.append(button)
 
+
+def get_user_details():
+
+    global user_name
+    global user_age
+
+    user_name = name_entry.get().strip()
+    age = age_entry.get().strip()
+
+    if user_name == "":
+        messagebox.showwarning(
+            "No Name",
+            "Please enter your name."
+        )
+        return
+
+    if age == "":
+        messagebox.showwarning(
+            "No Age",
+            "Please enter your age."
+        )
+        return
+
+    try:
+        user_age = int(age)
+
+    except ValueError:
+        messagebox.showwarning(
+            "Invalid Age",
+            "Please enter your age as a number."
+        )
+        return
+
+    if user_age < 16 or user_age > 18:
+        messagebox.showwarning(
+            "Invalid Age",
+            "This quiz is designed for users aged 16-18."
+        )
+        return
+
+    name_label.pack_forget()
+    name_entry.pack_forget()
+
+    age_label.pack_forget()
+    age_entry.pack_forget()
+
+    start_button.pack_forget()
+
+    title.config(
+        text="Welcome " + user_name + "!"
+    )
+
+    load_question()
+
+
+start_button = tk.Button(
+    root,
+    text="Start Quiz",
+    command=get_user_details,
+    font=("Arial", 12)
+)
+
+start_button.pack(pady=15)
+
