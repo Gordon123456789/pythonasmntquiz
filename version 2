@@ -102,11 +102,8 @@ score = 0
 # Python starts counting from 0.
 current_question = 0
 
-
-# ADDED FOR BACK BUTTON
-# This stores the answers the user has already selected.
+# Stores the answers the user has already selected.
 answer_history = []
-
 
 # These variables store the user's details.
 user_name = ""
@@ -193,8 +190,6 @@ question_label = tk.Label(
     wraplength=500
 )
 
-
-# ADDED FOR QUESTION PROGRESS
 # This label will display which question the user is on.
 progress_label = tk.Label(
     root,
@@ -317,24 +312,18 @@ start_button.pack(pady=15)
 # This function displays the current question.
 def load_question():
 
-    # Reset the selected answer.
-    # This means the user must select an answer
-    # for the new question.
+    # Reset selected answer
     choice.set(-1)
 
-
-    # Get the current question from the questions list.
+    # Get current question
     question = questions[current_question]
 
-
-    # ADDED FOR QUESTION PROGRESS
     # Display the current question number.
     progress_label.config(
         text="Question " + str(current_question + 1) + " of " + str(len(questions))
     )
-    
-    progress_label.pack(pady=10)
 
+    progress_label.pack(pady=10)
 
     # Change the question label to display
     # the current question.
@@ -343,7 +332,6 @@ def load_question():
     )
 
     question_label.pack(pady=20)
-
 
     # Change each radio button to display
     # the current question's options.
@@ -358,36 +346,39 @@ def load_question():
             padx=150
         )
 
+    # Show the button frame
+    button_frame.pack(pady=20)
 
-    # Show the Next button.
-    next_button.pack(pady=20)
-
-
-    # ADDED FOR BACK BUTTON
     # Show the Back button after the first question.
     if current_question > 0:
-        back_button.pack(pady=20)
+        back_button.pack(side="left", padx=10)
     else:
         back_button.pack_forget()
 
+    # Show the Next button
+    next_button.pack(side="left", padx=10)
 
-# ADDED FOR BACK BUTTON
-# This function moves the user back to the previous question.
+# BACK BUTTON
+
 def back_question():
 
     global score
     global current_question
 
+    # Only go back if we are not on question 1
     if current_question > 0:
 
+        # Get the previous answer
         previous_answer = answer_history.pop()
 
+        # Remove the previous answer's score
         score -= questions[current_question - 1]["scores"][previous_answer]
 
+        # Move back one question
         current_question -= 1
 
+        # Display the previous question
         load_question()
-
 
 # next question function
 
@@ -422,12 +413,8 @@ def next_question():
     # The scores list tells us how many points
     # that option is worth.
     score += questions[current_question]["scores"][choice.get()]
-
-
-    # ADDED FOR BACK BUTTON
-    # Store the user's answer so it can be removed if they go back.
+    # Save the answer
     answer_history.append(choice.get())
-
 
     # Move to the next question.
     current_question += 1
@@ -512,18 +499,14 @@ def show_results():
         button.pack_forget()
 
 
-    # Hide the Next button.
+    # Hide the Next button
     next_button.pack_forget()
 
-
-    # ADDED FOR QUESTION PROGRESS
-    # Hide the question progress when the quiz finishes.
-    progress_label.pack_forget()
-
-
-    # ADDED FOR BACK BUTTON
-    # Hide the Back button when the quiz finishes.
+    # Hide the Back button
     back_button.pack_forget()
+
+    # Hide question progress
+    progress_label.pack_forget()
 
 
     # Display the disclaimer.
@@ -532,44 +515,30 @@ def show_results():
     )
 
 
-# next button
+# Create a frame to hold the Next and Back buttons.
+button_frame = tk.Frame(root)
+
 
 # Create the Next button.
 next_button = tk.Button(
-    root,
-
-    # Text displayed on the button.
+    button_frame,
     text="Next",
-
-    # Run next_question() when clicked.
     command=next_question,
-
     font=("Arial", 12)
 )
 
 
-# Put the button into the window.
-next_button.pack(pady=20)
-
-
-# Hide the Next button until the user
-# has entered their details.
-next_button.pack_forget()
-
-
-# ADDED FOR BACK BUTTON
 # Create the Back button.
 back_button = tk.Button(
-    root,
+    button_frame,
     text="Back",
     command=back_question,
     font=("Arial", 12)
 )
 
 
-# ADDED FOR BACK BUTTON
-# Hide the Back button until the user reaches question 2.
-back_button.pack_forget()
+# Hide the button frame until the quiz starts.
+button_frame.pack_forget()
 
 
 # disclaimer
