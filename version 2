@@ -322,7 +322,7 @@ def get_user_details():
             "Income cannot be negative."
         )
         return
-
+# hides inputs after user details are accepted
     name_label.pack_forget()
     name_entry.pack_forget()
 
