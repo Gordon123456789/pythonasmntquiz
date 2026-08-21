@@ -108,7 +108,7 @@ answer_history = []
 # These variables store the user's details.
 user_name = ""
 user_age = 0
-
+user_income = 0
 
 # create the main window
 
@@ -123,7 +123,7 @@ root.title("Investment Recommendation Quiz")
 # Set the size of the window.
 # 600 = width
 # 400 = height
-root.geometry("600x400")
+root.geometry("600x480")
 
 
 # title
@@ -178,6 +178,25 @@ age_entry = tk.Entry(
 )
 
 age_entry.pack(pady=5)
+
+
+# Create a label asking the user for their income.
+income_label = tk.Label(
+    root,
+    text="Enter your annual income:",
+    font=("Arial", 12)
+)
+
+income_label.pack()
+
+
+# Create a box where the user can enter their income.
+income_entry = tk.Entry(
+    root,
+    font=("Arial", 12)
+)
+
+income_entry.pack(pady=5)
 
 
 # question label
@@ -244,9 +263,11 @@ def get_user_details():
 
     global user_name
     global user_age
+    global user_income
 
     user_name = name_entry.get().strip()
     age = age_entry.get().strip()
+    income = income_entry.get().strip()
 
     if user_name == "":
         messagebox.showwarning(
@@ -278,13 +299,39 @@ def get_user_details():
             "This quiz is designed for users aged 16-18."
         )
         return
+    
+    if income == "":
+        messagebox.showwarning(
+            "No Income",
+            "Please enter your annual income."
+        )
+        return
+
+    try:
+        user_income = float(income)
+
+    except ValueError:
+        messagebox.showwarning(
+            "Invalid Income",
+            "Please enter your income as a number."
+        )
+        return
+    if user_income < 0:
+        messagebox.showwarning(
+            "Invalid Income",
+            "Income cannot be negative."
+        )
+        return
 
     name_label.pack_forget()
     name_entry.pack_forget()
 
     age_label.pack_forget()
     age_entry.pack_forget()
-
+    
+    income_label.pack_forget()
+    income_entry.pack_forget()
+    
     start_button.pack_forget()
 
     title.config(
@@ -486,10 +533,35 @@ def show_results():
             "- Global index funds"
         )
 
+    # Give an additional suggestion based on the user's income.
+    if user_income < 30000:
+    
+        income_suggestion = (
+            "\n\nIncome Suggestion:\n"
+            "Consider building your savings before making "
+            "larger investments."
+        )
+    
+    elif user_income <= 70000:
+    
+        income_suggestion = (
+            "\n\nIncome Suggestion:\n"
+            "Consider starting with smaller, diversified "
+            "investments."
+        )
+    
+    else:
 
+        income_suggestion = (
+            "\n\nIncome Suggestion:\n"
+            "You may have more flexibility to consider a "
+            "wider range of investments."
+        )
+
+        
     # Replace the question with the results.
     question_label.config(
-        text="Results for " + user_name + "\n\n" + result
+        text="Results for " + user_name + "\n\n" + result + income_suggestion
     )
 
 
