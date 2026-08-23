@@ -7,6 +7,8 @@ import tkinter as tk
 # Import messagebox so we can show warning messages
 from tkinter import messagebox
 
+#helps find image file
+import os
 
 # questions
 
@@ -121,9 +123,9 @@ root.title("Investment Recommendation Quiz")
 
 
 # Set the size of the window.
-# 600 = width
-# 400 = height
-root.geometry("600x480")
+#600 = width
+#600 = height
+root.geometry("600x600")
 
 
 # title
@@ -139,8 +141,18 @@ title = tk.Label(
 # Put the title inside the window.
 title.pack(pady=20)
 
+
+# Find the folder where the Python file is located.
+folder = os.path.dirname(os.path.abspath(__file__))
+
+# Find the image inside the same folder.
+image_path = os.path.join(folder, "image.png")
+
 # Load the investment image.
-investment_image = tk.PhotoImage(file="image.jpg")
+investment_image = tk.PhotoImage(file=image_path)
+
+# Make the image smaller.
+investment_image = investment_image.subsample(3, 3)
 
 # Create a label to display the image.
 image_label = tk.Label(
