@@ -125,7 +125,7 @@ root.title("Investment Recommendation Quiz")
 # Set the size of the window.
 #600 = width
 #600 = height
-root.geometry("600x600")
+root.geometry("600x700")
 
 
 # title
