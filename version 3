@@ -139,6 +139,18 @@ title = tk.Label(
 # Put the title inside the window.
 title.pack(pady=20)
 
+# Load the investment image.
+investment_image = tk.PhotoImage(file="image.jpg")
+
+# Create a label to display the image.
+image_label = tk.Label(
+    root,
+    image=investment_image
+)
+
+# Put the image underneath the title.
+image_label.pack(pady=5)
+
 
 # user details
 
