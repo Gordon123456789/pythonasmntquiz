@@ -163,6 +163,17 @@ image_label = tk.Label(
 # Put the image underneath the title.
 image_label.pack(pady=5)
 
+# Find the results image.
+results_image_path = os.path.join(folder, "results.png")
+
+# Store the results image.
+results_image = None
+
+# Create a label to display the results image.
+results_image_label = tk.Label(
+    root
+)
+
 
 # user details
 
@@ -222,6 +233,22 @@ income_entry = tk.Entry(
 
 income_entry.pack(pady=5)
 
+# Store the paths for each question image.
+question_image_paths = [
+    os.path.join(folder, "question1.png"),
+    os.path.join(folder, "question2.png"),
+    os.path.join(folder, "question3.png"),
+    os.path.join(folder, "question4.png"),
+    os.path.join(folder, "question5.png")
+]
+
+# Store the current question image.
+question_image = None
+
+# Create a label to display the question images.
+question_image_label = tk.Label(
+    root
+)
 
 # question label
 
@@ -358,6 +385,9 @@ def get_user_details():
     
     start_button.pack_forget()
 
+    # Hide the user details image when the quiz starts.
+    image_label.pack_forget()
+    
     title.config(
         text="Welcome " + user_name + "!"
     )
@@ -383,11 +413,28 @@ start_button.pack(pady=15)
 # This function displays the current question.
 def load_question():
 
+    global question_image
+
     # Reset selected answer
     choice.set(-1)
 
     # Get current question
     question = questions[current_question]
+
+    # Load the image for the current question.
+    question_image = tk.PhotoImage(
+        file=question_image_paths[current_question]
+    )
+
+    # Make the image smaller.
+    question_image = question_image.subsample(2, 2)
+
+    # Display the current question image.
+    question_image_label.config(
+        image=question_image
+    )
+
+    question_image_label.pack(pady=5)
 
     # Display the current question number.
     progress_label.config(
@@ -510,6 +557,8 @@ def next_question():
 # This function decides the user's risk profile.
 def show_results():
 
+    global results_image
+
     # If the score is 7 or lower,
     # the user is considered conservative.
     if score <= 7:
@@ -587,6 +636,8 @@ def show_results():
     question_label.config(
         text="Results for " + user_name + "\n\n" + result + income_suggestion
     )
+    
+    question_label.pack(pady=0)
 
 
     # Hide the radio buttons because
@@ -610,6 +661,23 @@ def show_results():
         text="For educational purposes only. Not financial advice."
     )
 
+    # Hide the question image.
+    question_image_label.pack_forget()
+    
+    # Load the results image.
+    results_image = tk.PhotoImage(
+        file=results_image_path
+    )
+    
+    # Make the results image smaller.
+    results_image = results_image.subsample(2, 2)
+    
+    # Display the results image.
+    results_image_label.config(
+        image=results_image
+    )
+    
+    results_image_label.pack(pady=(0))
 
 # Create a frame to hold the Next and Back buttons.
 button_frame = tk.Frame(root)
