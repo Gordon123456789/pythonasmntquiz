@@ -551,6 +551,43 @@ def next_question():
         # display the final result.
         show_results()
 
+# save results function
+
+# This function saves the user's details and quiz result
+# to an external text file.
+def save_results():
+
+    # Open the results text file in append mode.
+    # "a" means new results are added without deleting old results.
+    with open("investment_results.txt", "a") as file:
+
+        # Save the user's details.
+        file.write("Investment Quiz Result\n")
+        file.write("Name: " + user_name + "\n")
+        file.write("Age: " + str(user_age) + "\n")
+        file.write("Income: $" + str(user_income) + "\n")
+
+        # Save the user's risk profile.
+        if score <= 7:
+            file.write("Result: Conservative\n")
+
+        elif score <= 11:
+            file.write("Result: Moderate\n")
+
+        else:
+            file.write("Result: Growth\n")
+
+        # Add the user's score.
+        file.write("Score: " + str(score) + "\n")
+
+        # Add a separator between different users.
+        file.write("------------------------------\n")
+
+    # Tell the user that their results have been saved.
+    messagebox.showinfo(
+        "Results Saved",
+        "Your results have been saved successfully."
+    )
 
 # results function
 
@@ -679,6 +716,9 @@ def show_results():
     
     results_image_label.pack(pady=(0))
 
+    # Show the save results button.
+    save_button.pack(pady=10)
+
 # Create a frame to hold the Next and Back buttons.
 button_frame = tk.Frame(root)
 
@@ -700,6 +740,13 @@ back_button = tk.Button(
     font=("Arial", 12)
 )
 
+# Create the Save Results button.
+save_button = tk.Button(
+    root,
+    text="Save Results",
+    command=save_results,
+    font=("Arial", 12)
+)
 
 # Hide the button frame until the quiz starts.
 button_frame.pack_forget()
