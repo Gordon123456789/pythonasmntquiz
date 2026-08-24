@@ -589,6 +589,84 @@ def save_results():
         "Your results have been saved successfully."
     )
 
+# restart quiz function
+
+# This function resets the quiz so the user can take it again.
+def restart_quiz():
+
+    global score
+    global current_question
+    global answer_history
+    global user_name
+    global user_age
+    global user_income
+
+    # Reset the score.
+    score = 0
+
+    # Reset the question number.
+    current_question = 0
+
+    # Clear the saved answers.
+    answer_history = []
+
+    # Reset user details.
+    user_name = ""
+    user_age = 0
+    user_income = 0
+
+    # Reset selected answer.
+    choice.set(-1)
+
+    # Hide results image.
+    results_image_label.pack_forget()
+
+    # Hide results buttons.
+    results_button_frame.pack_forget()
+
+    # Hide question image.
+    question_image_label.pack_forget()
+
+    # Hide question text.
+    question_label.pack_forget()
+
+    # Hide progress label.
+    progress_label.pack_forget()
+
+    # Hide quiz buttons.
+    button_frame.pack_forget()
+
+    # Hide radio buttons.
+    for button in buttons:
+        button.pack_forget()
+
+    # Clear disclaimer.
+    disclaimer.config(text="")
+
+    # Change title back.
+    title.config(
+        text="Investment Recommendation Quiz"
+    )
+
+    # Show welcome image again.
+    image_label.pack(pady=5)
+
+    # Show user detail inputs.
+    name_label.pack()
+    name_entry.delete(0, tk.END)
+    name_entry.pack(pady=5)
+
+    age_label.pack()
+    age_entry.delete(0, tk.END)
+    age_entry.pack(pady=5)
+
+    income_label.pack()
+    income_entry.delete(0, tk.END)
+    income_entry.pack(pady=5)
+
+    # Show start button.
+    start_button.pack(pady=15)
+
 # results function
 
 # This function decides the user's risk profile.
@@ -714,10 +792,19 @@ def show_results():
         image=results_image
     )
     
-    results_image_label.pack(pady=(0))
-
-    # Show the save results button.
-    save_button.pack(pady=10)
+    # Put the results image on the screen.
+    results_image_label.pack(pady=0)
+    
+    # Show the Save Results and Restart Quiz buttons.
+    results_button_frame.pack(pady=10)
+    
+    save_button.pack(side="left", padx=10)
+    
+    restart_button.pack(side="left", padx=10)
+    
+    save_button.pack(side="left", padx=10)
+    
+    restart_button.pack(side="left", padx=10)
 
 # Create a frame to hold the Next and Back buttons.
 button_frame = tk.Frame(root)
@@ -740,11 +827,25 @@ back_button = tk.Button(
     font=("Arial", 12)
 )
 
+# Create a frame to hold the Save Results and Restart Quiz buttons.
+results_button_frame = tk.Frame(root)
+
+# Hide the results button frame until the quiz finishes.
+results_button_frame.pack_forget()
+
 # Create the Save Results button.
 save_button = tk.Button(
-    root,
+    results_button_frame,
     text="Save Results",
     command=save_results,
+    font=("Arial", 12)
+)
+
+# Create the Restart Quiz button.
+restart_button = tk.Button(
+    results_button_frame,
+    text="Restart Quiz",
+    command=restart_quiz,
     font=("Arial", 12)
 )
 
