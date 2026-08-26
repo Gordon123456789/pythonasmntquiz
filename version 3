@@ -492,13 +492,17 @@ class InvestmentQuiz:
 
     def get_user_details(self):
 
+        # gets the user's name from the entry box and removes extra spaces
         self.user_name = self.name_entry.get().strip()
 
+        # gets the user's age from the entry box
         age = self.age_entry.get().strip()
 
+        # gets the user's income from the entry box
         income = self.income_entry.get().strip()
 
 
+        # checks if the user has left the name entry box empty
         if self.user_name == "":
             messagebox.showwarning(
                 "No Name",
@@ -507,6 +511,7 @@ class InvestmentQuiz:
             return
 
 
+        # checks if the user has left the age entry box empty
         if age == "":
             messagebox.showwarning(
                 "No Age",
@@ -515,9 +520,11 @@ class InvestmentQuiz:
             return
 
 
+        # tries to convert the age entered by the user into a whole number
         try:
             self.user_age = int(age)
 
+        # shows a warning if the age is not a valid number
         except ValueError:
             messagebox.showwarning(
                 "Invalid Age",
@@ -526,6 +533,7 @@ class InvestmentQuiz:
             return
 
 
+        # checks that the user's age is within the allowed range of 16-18
         if self.user_age < 16 or self.user_age > 18:
             messagebox.showwarning(
                 "Invalid Age",
@@ -534,6 +542,7 @@ class InvestmentQuiz:
             return
 
 
+        # checks if the user has left the income entry box empty
         if income == "":
             messagebox.showwarning(
                 "No Income",
@@ -542,9 +551,11 @@ class InvestmentQuiz:
             return
 
 
+        # tries to convert the income entered by the user into a decimal number
         try:
             self.user_income = float(income)
 
+        # shows a warning if the income is not a valid number
         except ValueError:
             messagebox.showwarning(
                 "Invalid Income",
@@ -553,6 +564,7 @@ class InvestmentQuiz:
             return
 
 
+        # checks that the user's income is not a negative value
         if self.user_income < 0:
             messagebox.showwarning(
                 "Invalid Income",
