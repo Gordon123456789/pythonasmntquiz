@@ -169,7 +169,7 @@ class InvestmentQuiz:
 
 
         # Set the title displayed at the top of the window.
-        self.root.title("Investment Recommendation Quiz")
+        self.root.title("Investment Recommendation Suggester")
 
 
         # Set the size of the window.
