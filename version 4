@@ -1,0 +1,1565 @@
+# investment quiz
+# version 4
+
+# Import tkinter so we can create a GUI
+import tkinter as tk
+
+# Import messagebox so we can show warning messages
+from tkinter import messagebox
+
+# helps find image file
+import os
+
+# Import matplotlib to create the investment allocation chart
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+# checks if pygame is installed so music can be used
+try:
+    import pygame
+    pygame_installed = True
+
+except ImportError:
+    pygame_installed = False
+
+
+# questions
+
+# This class stores information about each quiz question.
+#
+# Each question has:
+# "question" = the question itself.
+# "options" = the possible answers.
+# "scores" = the score for each answer.
+#
+# For example:
+# Option 1 = 1 point
+# Option 2 = 2 points
+# Option 3 = 3 points
+
+class Question:
+
+    def __init__(self, question, options, scores):
+
+        self.question = question
+        self.options = options
+        self.scores = scores
+
+
+# This list stores all of the questions in the quiz.
+# Each question is stored as a Question object.
+
+questions = [
+
+    Question(
+        "How long do you want to invest for?",
+
+        [
+            "Less than 1 year",
+            "1-5 years",
+            "More than 5 years"
+        ],
+
+        [1, 2, 3]
+    ),
+
+    Question(
+        "If your investment lost 20%, what would you do?",
+
+        [
+            "Sell it",
+            "Wait",
+            "Buy more"
+        ],
+
+        [1, 2, 3]
+    ),
+
+    Question(
+        "How much risk are you comfortable with?",
+
+        [
+            "Low",
+            "Medium",
+            "High"
+        ],
+
+        [1, 2, 3]
+    ),
+
+    Question(
+        "What is your main investment goal?",
+
+        [
+            "Keep my money safe",
+            "Earn extra money",
+            "Grow my wealth"
+        ],
+
+        [1, 2, 3]
+    ),
+
+    Question(
+        "How much investing experience do you have?",
+
+        [
+            "None",
+            "Some",
+            "A lot"
+        ],
+
+        [1, 2, 3]
+    )
+]
+
+
+# create the main window
+
+# This class contains the main investment quiz.
+# It stores the quiz variables and controls the GUI.
+
+class InvestmentQuiz:
+
+    def __init__(self, root):
+
+        # Store the main Tkinter window.
+        self.root = root
+
+        # Store the quiz questions.
+        self.questions = questions
+
+
+        # variables
+
+        # This variable stores the user's total score.
+        # It starts at 0 because the user has not answered
+        # any questions yet.
+        self.score = 0
+
+
+        # This keeps track of which question the user is on.
+        # Python starts counting from 0.
+        self.current_question = 0
+
+        # Stores the answers the user has already selected.
+        self.answer_history = []
+
+        # These variables store the user's details.
+        self.user_name = ""
+        self.user_age = 0
+        self.user_income = 0
+
+
+        # music settings
+
+        # checks whether background music is available
+        self.music_available = pygame_installed
+
+        # keeps track of whether music is currently playing
+        self.music_playing = False
+
+
+        # Store the current images so they are not removed
+        # from memory by Tkinter.
+        self.investment_image = None
+        self.question_image = None
+        self.results_image = None
+
+
+        # Set the title displayed at the top of the window.
+        self.root.title("Investment Recommendation Quiz")
+
+
+        # Set the size of the window.
+        #600 = width
+        #600 = height
+        self.root.geometry("600x800")
+
+
+        # title
+
+        # Create a label for the title.
+        self.title = tk.Label(
+            self.root,
+            text="Investment Recommendation Quiz",
+            font=("Arial", 20)
+        )
+
+
+        # Put the title inside the window.
+        self.title.pack(pady=20)
+
+
+        # Find the folder where the Python file is located.
+        self.folder = os.path.dirname(
+            os.path.abspath(__file__)
+        )
+
+
+        # find the background music file
+        self.music_path = os.path.join(
+            self.folder,
+            "music.mp3"
+        )
+
+
+        # Find the image inside the same folder.
+        image_path = os.path.join(
+            self.folder,
+            "image.png"
+        )
+
+
+        # Load the investment image.
+        self.investment_image = tk.PhotoImage(
+            file=image_path
+        )
+
+
+        # Make the image smaller.
+        self.investment_image = self.investment_image.subsample(
+            3,
+            3
+        )
+
+
+        # Create a label to display the image.
+        self.image_label = tk.Label(
+            self.root,
+            image=self.investment_image
+        )
+
+
+        # Put the image underneath the title.
+        self.image_label.pack(pady=5)
+
+
+        # Find the results image.
+        self.results_image_path = os.path.join(
+            self.folder,
+            "results.png"
+        )
+
+
+        # Store the results image.
+        self.results_image = None
+
+
+        # Create a label to display the results image.
+        self.results_image_label = tk.Label(
+            self.root
+        )
+
+
+        # user details
+
+        # Create a label asking the user for their name.
+        self.name_label = tk.Label(
+            self.root,
+            text="Enter your name:",
+            font=("Arial", 12)
+        )
+
+        self.name_label.pack()
+
+
+        # Create a box where the user can enter their name.
+        self.name_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12)
+        )
+
+        self.name_entry.pack(pady=5)
+
+
+        # Create a label asking the user for their age.
+        self.age_label = tk.Label(
+            self.root,
+            text="Enter your age:",
+            font=("Arial", 12)
+        )
+
+        self.age_label.pack()
+
+
+        # Create a box where the user can enter their age.
+        self.age_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12)
+        )
+
+        self.age_entry.pack(pady=5)
+
+
+        # Create a label asking the user for their income.
+        self.income_label = tk.Label(
+            self.root,
+            text="Enter your annual income:",
+            font=("Arial", 12)
+        )
+
+        self.income_label.pack()
+
+
+        # Create a box where the user can enter their income.
+        self.income_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12)
+        )
+
+        self.income_entry.pack(pady=5)
+
+
+        # Store the paths for each question image.
+        self.question_image_paths = [
+
+            os.path.join(
+                self.folder,
+                "question1.png"
+            ),
+
+            os.path.join(
+                self.folder,
+                "question2.png"
+            ),
+
+            os.path.join(
+                self.folder,
+                "question3.png"
+            ),
+
+            os.path.join(
+                self.folder,
+                "question4.png"
+            ),
+
+            os.path.join(
+                self.folder,
+                "question5.png"
+            )
+        ]
+
+
+        # Store the current question image.
+        self.question_image = None
+
+
+        # Create a label to display the question images.
+        self.question_image_label = tk.Label(
+            self.root
+        )
+
+
+        # question label
+
+        # This label will display the current question.
+        self.question_label = tk.Label(
+            self.root,
+            text="",
+            font=("Arial", 15),
+            wraplength=500
+        )
+
+
+        # This label will display which question the user is on.
+        self.progress_label = tk.Label(
+            self.root,
+            text="",
+            font=("Arial", 12)
+        )
+
+
+        # Create the progress bar.
+        self.progress_bar = tk.Canvas(
+            self.root,
+            width=400,
+            height=22,
+            bg="white",
+            highlightthickness=1
+        )
+
+
+        # Create the percentage text inside the progress bar.
+        self.progress_bar_text = self.progress_bar.create_text(
+            200,
+            11,
+            text="0%",
+            font=("Arial", 10)
+        )
+
+
+        # answer variable
+
+        # IntVar is used by Tkinter to store which
+        # radio button the user has selected.
+        #
+        # -1 means that no answer has been selected yet.
+        self.choice = tk.IntVar(
+            value=-1
+        )
+
+
+        # radio buttons
+
+        # This list will store all of the radio buttons.
+        self.buttons = []
+
+
+        # Create three radio buttons because each question
+        # has three possible answers.
+        for i in range(3):
+
+            # Create a radio button.
+            button = tk.Radiobutton(
+                self.root,
+
+                # The text will be changed when a question loads.
+                text="",
+
+                # Connect the button to the choice variable.
+                variable=self.choice,
+
+                # Each button gets a different value.
+                value=i,
+
+                font=("Arial", 12)
+            )
+
+            # Place the button on the screen.
+            self.buttons.append(button)
+
+
+        # Create a frame to hold the Next and Back buttons.
+        self.button_frame = tk.Frame(
+            self.root
+        )
+
+
+        # Create the Next button.
+        self.next_button = tk.Button(
+            self.button_frame,
+            text="Next",
+            command=self.next_question,
+            font=("Arial", 12)
+        )
+
+
+        # Create the Back button.
+        self.back_button = tk.Button(
+            self.button_frame,
+            text="Back",
+            command=self.back_question,
+            font=("Arial", 12)
+        )
+
+
+        # Create a frame to hold the Save Results and Restart Quiz buttons.
+        self.results_button_frame = tk.Frame(
+            self.root
+        )
+
+
+        # Hide the results button frame until the quiz finishes.
+        self.results_button_frame.pack_forget()
+
+
+        # Create the Save Results button.
+        self.save_button = tk.Button(
+            self.results_button_frame,
+            text="Save Results",
+            command=self.save_results,
+            font=("Arial", 12)
+        )
+
+
+        # Create the Restart Quiz button.
+        self.restart_button = tk.Button(
+            self.results_button_frame,
+            text="Restart Quiz",
+            command=self.restart_quiz,
+            font=("Arial", 12)
+        )
+
+
+        # Create a frame for the investment allocation chart.
+        self.chart_frame = tk.Frame(
+            self.root
+        )
+
+
+        # Hide the chart until the quiz finishes.
+        self.chart_frame.pack_forget()
+
+
+        # Hide the button frame until the quiz starts.
+        self.button_frame.pack_forget()
+
+
+        # disclaimer
+
+        # Create a label for the disclaimer.
+        self.disclaimer = tk.Label(
+            self.root,
+            text="",
+            font=("Arial", 9)
+        )
+
+
+        # Put the disclaimer at the bottom.
+        self.disclaimer.pack()
+
+
+        # Start button
+
+        # Create a button that starts the quiz.
+        # This button is part of the question section.
+        self.start_button = tk.Button(
+            self.root,
+            text="Start Questions",
+            command=self.get_user_details,
+            font=("Arial", 12)
+        )
+
+        self.start_button.pack(
+            pady=15
+        )
+
+
+        # music button
+
+        # create a button that allows the user to turn
+        # background music on and off
+        self.music_button = tk.Button(
+            self.root,
+            text="Music: Off",
+            command=self.toggle_music,
+            font=("Arial", 11)
+        )
+
+        self.music_button.pack(
+            pady=5
+        )
+
+
+    # music function
+
+    # this function starts the background music
+    def start_music(self):
+
+        # check if pygame is installed
+        if not self.music_available:
+
+            # tell the user how to install pygame
+            messagebox.showinfo(
+                "Music Not Available",
+                "Background music is currently unavailable because pygame "
+                "is not installed.\n\n"
+                "To install pygame:\n\n"
+                "1. Open Command Prompt or Terminal.\n"
+                "2. Type:\n\n"
+                "pip install pygame\n\n"
+                "3. Press Enter.\n"
+                "4. Restart this program."
+            )
+
+            return
+
+
+        try:
+
+            # check if the music file exists
+            if not os.path.exists(
+                self.music_path
+            ):
+
+                messagebox.showwarning(
+                    "Music File Not Found",
+                    "Could not find music.mp3.\n\n"
+                    "Put music.mp3 in the same folder as "
+                    "your Python program."
+                )
+
+                return
+
+
+            # only initialise pygame if music is not already playing
+            if not self.music_playing:
+
+                # start pygame's music system
+                pygame.mixer.init()
+
+                # load the music file
+                pygame.mixer.music.load(
+                    self.music_path
+                )
+
+                # play the music continuously
+                pygame.mixer.music.play(
+                    -1
+                )
+
+                # record that music is playing
+                self.music_playing = True
+
+                # update the button text
+                self.music_button.config(
+                    text="Music: On"
+                )
+
+
+        except Exception as error:
+
+            # show an error if the music cannot play
+            messagebox.showwarning(
+                "Music Error",
+                "The music could not be played.\n\n" +
+                str(error)
+            )
+
+
+    # stop music function
+
+    # this function stops the background music
+    def stop_music(self):
+
+        # check that pygame is available
+        if self.music_available:
+
+            # only stop music if it is playing
+            if self.music_playing:
+
+                try:
+
+                    # stop the music
+                    pygame.mixer.music.stop()
+
+                    # update the music status
+                    self.music_playing = False
+
+                    # update the button text
+                    self.music_button.config(
+                        text="Music: Off"
+                    )
+
+                except Exception:
+
+                    # prevent errors if pygame has already closed
+                    pass
+
+
+    # toggle music function
+
+    # this function switches the music on and off
+    def toggle_music(self):
+
+        # check whether music is currently playing
+        if self.music_playing:
+
+            # turn the music off
+            self.stop_music()
+
+        else:
+
+            # turn the music on
+            self.start_music()
+
+
+    # close program function
+
+    # this function stops music and closes the program
+    def close_program(self):
+
+        # stop the background music
+        self.stop_music()
+
+        # close the tkinter window
+        self.root.destroy()
+
+
+    # user details function
+
+    def get_user_details(self):
+
+        # gets the user's name from the entry box and removes extra spaces
+        self.user_name = self.name_entry.get().strip()
+
+        # gets the user's age from the entry box
+        age = self.age_entry.get().strip()
+
+        # gets the user's income from the entry box
+        income = self.income_entry.get().strip()
+
+
+        # checks if the user has left the name entry box empty
+        if self.user_name == "":
+            messagebox.showwarning(
+                "No Name",
+                "Please enter your name."
+            )
+            return
+
+
+        # checks if the user has left the age entry box empty
+        if age == "":
+            messagebox.showwarning(
+                "No Age",
+                "Please enter your age."
+            )
+            return
+
+
+        # tries to convert the age entered by the user into a whole number
+        try:
+            self.user_age = int(age)
+
+        # shows a warning if the age is not a valid number
+        except ValueError:
+            messagebox.showwarning(
+                "Invalid Age",
+                "Please enter your age as a number."
+            )
+            return
+
+
+        # checks that the user's age is within the allowed range of 16-18
+        if self.user_age < 16 or self.user_age > 18:
+            messagebox.showwarning(
+                "Invalid Age",
+                "This quiz is designed for users aged 16-18."
+            )
+            return
+
+
+        # checks if the user has left the income entry box empty
+        if income == "":
+            messagebox.showwarning(
+                "No Income",
+                "Please enter your annual income."
+            )
+            return
+
+
+        # tries to convert the income entered by the user into a decimal number
+        try:
+            self.user_income = float(income)
+
+        # shows a warning if the income is not a valid number
+        except ValueError:
+            messagebox.showwarning(
+                "Invalid Income",
+                "Please enter your income as a number."
+            )
+            return
+
+
+        # checks that the user's income is not a negative value
+        if self.user_income < 0:
+            messagebox.showwarning(
+                "Invalid Income",
+                "Income cannot be negative."
+            )
+            return
+
+
+        # hides inputs after user details are accepted
+        self.name_label.pack_forget()
+        self.name_entry.pack_forget()
+
+        self.age_label.pack_forget()
+        self.age_entry.pack_forget()
+
+        self.income_label.pack_forget()
+        self.income_entry.pack_forget()
+
+        self.start_button.pack_forget()
+
+        # Hide the user details image when the quiz starts.
+        self.image_label.pack_forget()
+
+        self.title.config(
+            text="Welcome " + self.user_name + "!"
+        )
+
+        self.load_question()
+
+
+    # load question function
+
+    # This function displays the current question.
+    def load_question(self):
+
+        # Reset selected answer
+        self.choice.set(-1)
+
+        # Get current question
+        question = self.questions[
+            self.current_question
+        ]
+
+
+        # Load the image for the current question.
+        self.question_image = tk.PhotoImage(
+            file=self.question_image_paths[
+                self.current_question
+            ]
+        )
+
+
+        # Make the image smaller.
+        self.question_image = self.question_image.subsample(
+            2,
+            2
+        )
+
+
+        # Display the current question image.
+        self.question_image_label.config(
+            image=self.question_image
+        )
+
+        self.question_image_label.pack(
+            pady=5
+        )
+
+
+        # Display the current question number.
+        self.progress_label.config(
+            text="Question " +
+            str(self.current_question + 1) +
+            " of " +
+            str(len(self.questions))
+        )
+
+        self.progress_label.pack(
+            pady=5
+        )
+
+
+        # Update the visual progress bar.
+        self.update_progress_bar()
+
+
+        # Change the question label to display
+        # the current question.
+        self.question_label.config(
+            text=question.question,
+            font=("Arial", 15)
+        )
+
+        self.question_label.pack(
+            pady=15
+        )
+
+
+        # Change each radio button to display
+        # the current question's options.
+        for i in range(3):
+
+            self.buttons[i].config(
+                text=question.options[i]
+            )
+
+            self.buttons[i].pack(
+                anchor="w",
+                padx=150
+            )
+
+
+        # Show the button frame
+        self.button_frame.pack(
+            pady=20
+        )
+
+
+        # Show the Back button after the first question.
+        if self.current_question > 0:
+
+            self.back_button.pack(
+                side="left",
+                padx=10
+            )
+
+        else:
+
+            self.back_button.pack_forget()
+
+
+        # Show the Next button.
+        self.next_button.pack(
+            side="left",
+            padx=10
+        )
+
+
+    # progress bar function
+
+    # This function updates the visual progress bar.
+    def update_progress_bar(self):
+
+        # Remove the old progress bar.
+        self.progress_bar.delete(
+            "bar"
+        )
+
+
+        # Calculate the percentage completed.
+        percentage = int(
+            (
+                (self.current_question + 1)
+                / len(self.questions)
+            ) * 100
+        )
+
+
+        # Calculate how wide the progress bar should be.
+        bar_width = int(
+            400 * percentage / 100
+        )
+
+
+        # Draw the completed section of the progress bar.
+        self.progress_bar.create_rectangle(
+            0,
+            0,
+            bar_width,
+            22,
+            fill="green",
+            tags="bar"
+        )
+
+
+        # Change the percentage text.
+        self.progress_bar.itemconfig(
+            self.progress_bar_text,
+            text=str(percentage) + "%"
+        )
+
+
+        # Make sure the percentage appears above the bar.
+        self.progress_bar.tag_raise(
+            self.progress_bar_text
+        )
+
+
+        # Display the progress bar.
+        self.progress_bar.pack(
+            pady=5
+        )
+
+
+    # BACK BUTTON
+
+    def back_question(self):
+
+        # Only go back if we are not on question 1
+        if self.current_question > 0:
+
+            # Get the previous answer
+            previous_answer = self.answer_history.pop()
+
+            # Remove the previous answer's score
+            self.score -= self.questions[
+                self.current_question - 1
+            ].scores[previous_answer]
+
+            # Move back one question
+            self.current_question -= 1
+
+            # Display the previous question
+            self.load_question()
+
+
+    # next question function
+
+    # This function runs when the user presses Next.
+    def next_question(self):
+
+        # Check if the user selected an answer.
+        # -1 means no answer was selected.
+        if self.choice.get() == -1:
+
+            # Display a warning if they haven't
+            # selected an answer.
+            messagebox.showwarning(
+                "No Answer",
+                "Please select an answer."
+            )
+
+            # Stop the function here.
+            return
+
+
+        # Add the score from the selected answer
+        # to the user's total score.
+        #
+        # choice.get() gives us the selected option.
+        # The scores list tells us how many points
+        # that option is worth.
+        self.score += self.questions[
+            self.current_question
+        ].scores[
+            self.choice.get()
+        ]
+
+
+        # Save the answer
+        self.answer_history.append(
+            self.choice.get()
+        )
+
+
+        # Move to the next question
+        self.current_question += 1
+
+
+        # Check whether there are still questions left.
+        if self.current_question < len(
+            self.questions
+        ):
+
+            # If there are questions left,
+            # display the next question.
+            self.load_question()
+
+        else:
+
+            # If there are no questions left,
+            # display the final result.
+            self.show_results()
+
+
+    # investment allocation chart function
+
+    # This class creates the investment allocation chart.
+    class InvestmentChart:
+
+        def __init__(self, parent):
+
+            self.parent = parent
+            self.canvas = None
+
+
+        def show_allocation_chart(
+            self,
+            profile
+        ):
+
+            # Remove any previous chart.
+            for widget in self.parent.winfo_children():
+
+                widget.destroy()
+
+
+            # Choose an allocation based on the risk profile.
+            if profile == "Conservative":
+
+                labels = [
+                    "Savings",
+                    "Bonds",
+                    "Index Funds"
+                ]
+
+                values = [
+                    50,
+                    35,
+                    15
+                ]
+
+
+            elif profile == "Moderate":
+
+                labels = [
+                    "Index Funds",
+                    "Bonds",
+                    "Savings"
+                ]
+
+                values = [
+                    50,
+                    30,
+                    20
+                ]
+
+
+            else:
+
+                labels = [
+                    "Growth ETFs",
+                    "Global Index Funds",
+                    "Shares"
+                ]
+
+                values = [
+                    45,
+                    35,
+                    20
+                ]
+
+
+            # Create the pie chart.
+            figure = Figure(
+                figsize=(4, 2.2),
+                dpi=100
+            )
+
+            axis = figure.add_subplot(
+                111
+            )
+
+
+            # Add the sections to the pie chart.
+            axis.pie(
+                values,
+                labels=labels,
+                autopct="%1.0f%%",
+                startangle=90
+            )
+
+
+            # Add a title to the chart.
+            axis.set_title(
+                "Suggested Investment Allocation"
+            )
+
+
+            # Display the chart inside Tkinter.
+            self.canvas = FigureCanvasTkAgg(
+                figure,
+                master=self.parent
+            )
+
+            self.canvas.draw()
+
+            self.canvas.get_tk_widget().pack()
+
+
+    # Create the investment chart object.
+    def create_chart(self):
+
+        self.chart = self.InvestmentChart(
+            self.chart_frame
+        )
+
+
+    # save results function
+
+    # This function saves the user's details and quiz result
+    # to an external text file.
+    def save_results(self):
+
+        # Build the full path to the results file, in the same
+        # folder as this script.
+        results_path = os.path.join(
+            self.folder,
+            "investment_results.txt"
+        )
+
+
+        try:
+
+            # Open the results text file in append mode.
+            # "a" means new results are added without deleting old results.
+            with open(
+                results_path,
+                "a"
+            ) as file:
+
+                # Save the user's details.
+                file.write(
+                    "Investment Quiz Result\n"
+                )
+
+                file.write(
+                    "Name: " +
+                    self.user_name +
+                    "\n"
+                )
+
+                file.write(
+                    "Age: " +
+                    str(self.user_age) +
+                    "\n"
+                )
+
+                file.write(
+                    "Income: $" +
+                    str(self.user_income) +
+                    "\n"
+                )
+
+
+                # Save the user's risk profile.
+                if self.score <= 7:
+
+                    profile = "Conservative"
+
+                elif self.score <= 11:
+
+                    profile = "Moderate"
+
+                else:
+
+                    profile = "Growth"
+
+
+                file.write(
+                    "Result: " +
+                    profile +
+                    "\n"
+                )
+
+
+                # Add the user's score.
+                file.write(
+                    "Score: " +
+                    str(self.score) +
+                    "\n"
+                )
+
+
+                # Add a separator between different users.
+                file.write(
+                    "------------------------------\n"
+                )
+
+
+        except OSError as error:
+
+            # If the file could not be written tell the user.
+            messagebox.showerror(
+                "Save Failed",
+                "Your results could not be saved.\n\n" +
+                str(error)
+            )
+
+            return
+
+
+        # Tell the user that their results have been saved.
+        messagebox.showinfo(
+            "Results Saved",
+            "Your results have been saved successfully to:\n" +
+            results_path
+        )
+
+
+    # restart quiz function
+
+    # This function resets the quiz so the user can take it again.
+    def restart_quiz(self):
+
+        # Reset the score.
+        self.score = 0
+
+        # Reset the question number.
+        self.current_question = 0
+
+        # Clear the saved answers.
+        self.answer_history = []
+
+        # Reset user details.
+        self.user_name = ""
+        self.user_age = 0
+        self.user_income = 0
+
+        # Reset selected answer.
+        self.choice.set(-1)
+
+
+        # Hide results image.
+        self.results_image_label.pack_forget()
+
+        # Hide results buttons.
+        self.results_button_frame.pack_forget()
+
+        # Hide the chart.
+        self.chart_frame.pack_forget()
+
+        # Hide question image.
+        self.question_image_label.pack_forget()
+
+        # Hide question text.
+        self.question_label.pack_forget()
+
+        # Hide progress label.
+        self.progress_label.pack_forget()
+
+        # Hide progress bar.
+        self.progress_bar.pack_forget()
+
+        # Hide quiz buttons.
+        self.button_frame.pack_forget()
+
+
+        # Hide radio buttons.
+        for button in self.buttons:
+
+            button.pack_forget()
+
+
+        # Clear disclaimer.
+        self.disclaimer.config(
+            text=""
+        )
+
+
+        # Change title back.
+        self.title.config(
+            text="Investment Recommendation Quiz"
+        )
+
+
+        # Show welcome image again.
+        self.image_label.pack(
+            pady=5
+        )
+
+
+        # Show user detail inputs.
+        self.name_label.pack()
+
+        self.name_entry.delete(
+            0,
+            tk.END
+        )
+
+        self.name_entry.pack(
+            pady=5
+        )
+
+
+        self.age_label.pack()
+
+        self.age_entry.delete(
+            0,
+            tk.END
+        )
+
+        self.age_entry.pack(
+            pady=5
+        )
+
+
+        self.income_label.pack()
+
+        self.income_entry.delete(
+            0,
+            tk.END
+        )
+
+        self.income_entry.pack(
+            pady=5
+        )
+
+
+        # Show start button.
+        self.start_button.pack(
+            pady=15
+        )
+
+
+    # results function
+
+    # This function decides the user's risk profile.
+    def show_results(self):
+
+        # If the score is 7 or lower,
+        # the user is considered conservative.
+        if self.score <= 7:
+
+            result = (
+                "Risk Profile: Conservative\n"
+                "You prefer lower levels of risk.\n\n"
+                "Suggested investments:\n"
+                "- Savings accounts\n"
+                "- Term deposits\n"
+                "- Bonds"
+            )
+
+            profile = "Conservative"
+
+
+        # If the score is between 8 and 11,
+        # the user is considered moderate.
+        elif self.score <= 11:
+
+            result = (
+                "Risk Profile: Moderate\n"
+                "You are comfortable with some risk.\n\n"
+                "Suggested investments:\n"
+                "- Index funds\n"
+                "- Balanced funds\n"
+                "- Bonds"
+            )
+
+            profile = "Moderate"
+
+
+        # If the score is higher than 11,
+        # the user is considered a growth investor.
+        else:
+
+            result = (
+                "Risk Profile: Growth\n"
+                "You are comfortable with higher risk.\n\n"
+                "Suggested investments:\n"
+                "- Growth ETFs\n"
+                "- Shares\n"
+                "- Global index funds"
+            )
+
+            profile = "Growth"
+
+
+        # Give an additional suggestion based on the user's income.
+        if self.user_income < 30000:
+
+            income_suggestion = (
+                "\n\nIncome Suggestion:\n"
+                "Consider building your savings before making "
+                "larger investments."
+            )
+
+        elif self.user_income <= 70000:
+
+            income_suggestion = (
+                "\n\nIncome Suggestion:\n"
+                "Consider starting with smaller, diversified "
+                "investments."
+            )
+
+        else:
+
+            income_suggestion = (
+                "\n\nIncome Suggestion:\n"
+                "You may have more flexibility to consider a "
+                "wider range of investments."
+            )
+
+
+        # Create a smaller results font.
+        results_font = (
+            "Arial",
+            10
+        )
+
+
+        # Replace the question with the results.
+        self.question_label.config(
+            text="Results for " +
+            self.user_name +
+            "\n\n" +
+            result +
+            income_suggestion,
+            font=results_font
+        )
+
+
+        # Display the results with less spacing.
+        self.question_label.pack(
+            pady=2
+        )
+
+
+        # Hide the radio buttons because
+        # the quiz has finished.
+        for button in self.buttons:
+
+            button.pack_forget()
+
+
+        # Hide the Next button.
+        self.next_button.pack_forget()
+
+        # Hide the Back button.
+        self.back_button.pack_forget()
+
+        # Hide question progress.
+        self.progress_label.pack_forget()
+
+        # Hide the progress bar.
+        self.progress_bar.pack_forget()
+
+
+        # Display the disclaimer.
+        self.disclaimer.config(
+            text="For educational purposes only. Not financial advice.",
+            font=("Arial", 8)
+        )
+
+
+        # Hide the question image.
+        self.question_image_label.pack_forget()
+
+
+        # Load the results image.
+        self.results_image = tk.PhotoImage(
+            file=self.results_image_path
+        )
+
+
+        # Make the results image much smaller.
+        self.results_image = self.results_image.subsample(
+            3,
+            3
+        )
+
+
+        # Display the results image.
+        self.results_image_label.config(
+            image=self.results_image
+        )
+
+
+        # Put the results image on the screen with less space.
+        self.results_image_label.pack(
+            pady=0
+        )
+
+
+        # Display the allocation chart.
+        self.chart_frame.pack(
+            pady=0
+        )
+
+        self.chart.show_allocation_chart(
+            profile
+        )
+
+
+        # Show the Save Results and Restart Quiz buttons.
+        self.results_button_frame.pack(
+            pady=3
+        )
+
+
+        self.save_button.pack(
+            side="left",
+            padx=10
+        )
+
+
+        self.restart_button.pack(
+            side="left",
+            padx=10
+        )
+
+
+# Create the main window.
+root = tk.Tk()
+
+# Create the investment quiz.
+quiz = InvestmentQuiz(root)
+
+# Create the investment allocation chart.
+quiz.create_chart()
+
+# make sure music stops when the user closes the program
+root.protocol(
+    "WM_DELETE_WINDOW",
+    quiz.close_program
+)
+
+# Start the program.
+root.mainloop()
