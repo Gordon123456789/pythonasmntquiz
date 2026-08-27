@@ -1359,6 +1359,20 @@ class InvestmentQuiz:
         )
 
 
+        # Re-pack the music button so it stays at the bottom of the
+        # window. Widgets that get pack_forget() then pack() again
+        # move to the end of the packing order automatically, but
+        # the music button was never forgotten during a restart, so
+        # it kept its old position while everything else moved past
+        # it. Forgetting and re-packing it here puts it back at the
+        # very end, i.e. the bottom, every time.
+        self.music_button.pack_forget()
+
+        self.music_button.pack(
+            pady=5
+        )
+
+
     # results function
 
     # This function decides the user's risk profile.
@@ -1543,6 +1557,16 @@ class InvestmentQuiz:
         self.restart_button.pack(
             side="left",
             padx=10
+        )
+
+
+        # Re-pack the music button last so it stays at the bottom
+        # of the results page instead of keeping whatever position
+        # it was left in from before the results were shown.
+        self.music_button.pack_forget()
+
+        self.music_button.pack(
+            pady=5
         )
 
 
