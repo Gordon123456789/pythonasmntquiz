@@ -56,7 +56,6 @@ class AppConstants:
     CONSERVATIVE_MAX_SCORE = 7
     MODERATE_MAX_SCORE = 11
 
-    QUESTION_COUNT = 5
     OPTION_COUNT = 3
 
     PROGRESS_BAR_WIDTH = 400
@@ -83,6 +82,17 @@ class AppConstants:
         "question4.png",
         "question5.png"
     ]
+
+    # animation settings
+
+    # These control the speed of the fade transition and the
+    # progress bar animation. Smaller delays make the animation
+    # faster; larger steps make it chunkier but quicker.
+
+    FADE_STEP = 0.1
+    FADE_DELAY_MS = 20
+
+    PROGRESS_ANIMATION_DELAY_MS = 8
 
 
 # question class
@@ -1079,6 +1089,13 @@ class InvestmentQuizGUI:
         )
 
 
+        # This tracks the percentage currently drawn on the
+        # progress bar, so the animation knows where to start
+        # from each time it needs to move to a new percentage.
+
+        self.current_progress_percentage = 0
+
+
         # answer variable
 
         self.choice = tk.IntVar(
@@ -1149,7 +1166,9 @@ class InvestmentQuizGUI:
         self.restart_button = tk.Button(
             self.results_button_frame,
             text="Restart Quiz",
-            command=self.restart_quiz,
+            command=lambda: self.animate_transition(
+                self.restart_quiz
+            ),
             font=("Arial", 12)
         )
 
@@ -1393,7 +1412,9 @@ class InvestmentQuizGUI:
             text="Welcome " + name + "!"
         )
 
-        self.load_question()
+        self.animate_transition(
+            self.load_question
+        )
 
 
     # hide user details function
@@ -1571,11 +1592,15 @@ class InvestmentQuizGUI:
 
         if self.quiz_engine.quiz_finished():
 
-            self.show_results()
+            self.animate_transition(
+                self.show_results
+            )
 
         else:
 
-            self.load_question()
+            self.animate_transition(
+                self.load_question
+            )
 
 
     # back question function
@@ -1586,19 +1611,25 @@ class InvestmentQuizGUI:
 
         if self.quiz_engine.go_back():
 
-            self.load_question()
+            self.animate_transition(
+                self.load_question
+            )
 
 
     # update progress bar function
 
+    # Instead of jumping straight to the new percentage, this
+    # hands off to animate_progress_bar so the bar fills in
+    # smoothly from its current position to the new one.
+
     def update_progress_bar(self):
 
-        self.progress_bar.delete(
-            "bar"
+        self.progress_bar.pack(
+            pady=5
         )
 
 
-        percentage = int(
+        target_percentage = int(
             (
                 self.quiz_engine.get_current_question_number()
                 /
@@ -1608,9 +1639,31 @@ class InvestmentQuizGUI:
         )
 
 
+        self.animate_progress_bar(
+            self.current_progress_percentage,
+            target_percentage
+        )
+
+
+    # animate progress bar function
+
+    # Moves the progress bar one percentage point at a time
+    # from "current" towards "target", creating a smooth
+    # filling animation instead of an instant jump.
+
+    def animate_progress_bar(self, current, target):
+
+        self.current_progress_percentage = current
+
+
+        self.progress_bar.delete(
+            "bar"
+        )
+
+
         bar_width = int(
             AppConstants.PROGRESS_BAR_WIDTH
-            * percentage
+            * current
             / 100
         )
 
@@ -1627,7 +1680,7 @@ class InvestmentQuizGUI:
 
         self.progress_bar.itemconfig(
             self.progress_bar_text,
-            text=str(percentage) + "%"
+            text=str(current) + "%"
         )
 
 
@@ -1636,8 +1689,20 @@ class InvestmentQuizGUI:
         )
 
 
-        self.progress_bar.pack(
-            pady=5
+        if current == target:
+
+            return
+
+
+        step = 1 if target > current else -1
+
+
+        self.root.after(
+            AppConstants.PROGRESS_ANIMATION_DELAY_MS,
+            lambda: self.animate_progress_bar(
+                current + step,
+                target
+            )
         )
 
 
@@ -2100,6 +2165,9 @@ class InvestmentQuizGUI:
         self.disclaimer.pack_forget()
 
 
+        self.current_progress_percentage = 0
+
+
         for button in self.buttons:
 
             button.pack_forget()
@@ -2163,6 +2231,115 @@ class InvestmentQuizGUI:
         self.view_history_button.pack(
             pady=5
         )
+
+
+    # animate transition function
+
+    # This is the main entry point used whenever the GUI is
+    # about to switch to different content (a new question,
+    # the results screen, or back to the start screen).
+    #
+    # It fades the window out, then runs "on_faded_out" (which
+    # actually swaps the widgets/content), then fades the
+    # window back in. This creates a simple animated transition
+    # without needing to change how each screen is built.
+
+    def animate_transition(self, on_faded_out):
+
+        self.fade_out(on_faded_out)
+
+
+    # fade out function
+
+    # Gradually reduces the window's opacity to 0, then calls
+    # the callback and starts fading back in.
+
+    def fade_out(self, callback, alpha=1.0):
+
+        alpha = round(
+            alpha - AppConstants.FADE_STEP,
+            2
+        )
+
+
+        if alpha <= 0:
+
+            self.set_window_alpha(0)
+
+            callback()
+
+            self.fade_in()
+
+            return
+
+
+        if not self.set_window_alpha(alpha):
+
+            # The window does not support transparency on this
+            # system, so just run the callback with no animation.
+
+            callback()
+
+            return
+
+
+        self.root.after(
+            AppConstants.FADE_DELAY_MS,
+            lambda: self.fade_out(callback, alpha)
+        )
+
+
+    # fade in function
+
+    # Gradually increases the window's opacity back to 1 after
+    # new content has been loaded.
+
+    def fade_in(self, alpha=0.0):
+
+        alpha = round(
+            alpha + AppConstants.FADE_STEP,
+            2
+        )
+
+
+        if alpha >= 1:
+
+            self.set_window_alpha(1)
+
+            return
+
+
+        if not self.set_window_alpha(alpha):
+
+            return
+
+
+        self.root.after(
+            AppConstants.FADE_DELAY_MS,
+            lambda: self.fade_in(alpha)
+        )
+
+
+    # set window alpha function
+
+    # Some systems do not support the "-alpha" window attribute.
+    # This safely attempts to set it and reports whether it
+    # worked, so the fade functions can fall back gracefully.
+
+    def set_window_alpha(self, alpha):
+
+        try:
+
+            self.root.attributes(
+                "-alpha",
+                alpha
+            )
+
+            return True
+
+        except tk.TclError:
+
+            return False
 
 
     # music functions
