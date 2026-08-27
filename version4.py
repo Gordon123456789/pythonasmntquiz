@@ -34,19 +34,65 @@ except ImportError:
     pygame_installed = False
 
 
-# questions
+# constants
 
-# This class stores information about each quiz question.
+# This class stores constants used throughout the program.
+# Keeping important values here makes the program easier to
+# modify without searching through the whole program.
+
+class AppConstants:
+
+    WINDOW_WIDTH = 600
+    WINDOW_HEIGHT = 800
+
+    MIN_AGE = 16
+    MAX_AGE = 18
+
+    MIN_PASSWORD_LENGTH = 6
+
+    LOW_INCOME_LIMIT = 30000
+    HIGH_INCOME_LIMIT = 70000
+
+    CONSERVATIVE_MAX_SCORE = 7
+    MODERATE_MAX_SCORE = 11
+
+    QUESTION_COUNT = 5
+    OPTION_COUNT = 3
+
+    PROGRESS_BAR_WIDTH = 400
+    PROGRESS_BAR_HEIGHT = 22
+
+    MUSIC_FILENAME = "music.mp3"
+    PROFILE_FILENAME = "profiles.json"
+    RESULTS_FILENAME = "investment_results.txt"
+
+    WELCOME_IMAGE = "image.png"
+    RESULTS_IMAGE = "results.png"
+
+    BACKGROUND_FILENAMES = [
+        "background.png",
+        "background2.png",
+        "background3.png",
+        "background4.png"
+    ]
+
+    QUESTION_IMAGE_FILENAMES = [
+        "question1.png",
+        "question2.png",
+        "question3.png",
+        "question4.png",
+        "question5.png"
+    ]
+
+
+# question class
+
+# This class stores information about one quiz question.
 #
 # Each question has:
 # "question" = the question itself.
 # "options" = the possible answers.
 # "scores" = the score for each answer.
-#
-# For example:
-# Option 1 = 1 point
-# Option 2 = 2 points
-# Option 3 = 3 points
 
 class Question:
 
@@ -57,1571 +103,281 @@ class Question:
         self.scores = scores
 
 
-# This list stores all of the questions in the quiz.
-# Each question is stored as a Question object.
+# quiz engine
 
-questions = [
+# This class contains the underlying quiz logic.
+#
+# It does NOT create Tkinter widgets.
+# It does NOT display message boxes.
+# It does NOT control the GUI.
+#
+# This means the quiz logic is separated from the GUI.
 
-    Question(
-        "How long do you want to invest for?",
+class QuizEngine:
 
-        [
-            "Less than 1 year",
-            "1-5 years",
-            "More than 5 years"
-        ],
+    def __init__(self, questions):
 
-        [1, 2, 3]
-    ),
-
-    Question(
-        "If your investment lost 20%, what would you do?",
-
-        [
-            "Sell it",
-            "Wait",
-            "Buy more"
-        ],
-
-        [1, 2, 3]
-    ),
-
-    Question(
-        "How much risk are you comfortable with?",
-
-        [
-            "Low",
-            "Medium",
-            "High"
-        ],
-
-        [1, 2, 3]
-    ),
-
-    Question(
-        "What is your main investment goal?",
-
-        [
-            "Keep my money safe",
-            "Earn extra money",
-            "Grow my wealth"
-        ],
-
-        [1, 2, 3]
-    ),
-
-    Question(
-        "How much investing experience do you have?",
-
-        [
-            "None",
-            "Some",
-            "A lot"
-        ],
-
-        [1, 2, 3]
-    )
-]
-
-
-# create the main window
-
-# This class contains the main investment quiz.
-# It stores the quiz variables and controls the GUI.
-
-class InvestmentQuiz:
-
-    def __init__(self, root):
-
-        # Store the main Tkinter window.
-        self.root = root
-
-        # Store the quiz questions.
+        # Store the questions passed into the engine.
         self.questions = questions
 
+        # Reset the quiz when the engine is created.
+        self.reset()
 
-        # variables
 
-        # This variable stores the user's total score.
-        # It starts at 0 because the user has not answered
-        # any questions yet.
+    # reset function
+
+    # This resets all quiz data so the quiz can be taken again.
+
+    def reset(self):
+
         self.score = 0
-
-
-        # This keeps track of which question the user is on.
-        # Python starts counting from 0.
         self.current_question = 0
-
-        # Stores the answers the user has already selected.
         self.answer_history = []
 
-        # These variables store the user's details.
         self.user_name = ""
         self.user_age = 0
         self.user_income = 0
 
 
-        # music settings
+    # set user details function
 
-        # checks whether background music is available
-        self.music_available = pygame_installed
+    # The GUI passes validated user details into the quiz engine.
 
-        # keeps track of whether music is currently playing
-        self.music_playing = False
+    def set_user_details(
+        self,
+        name,
+        age,
+        income
+    ):
 
+        self.user_name = name
+        self.user_age = age
+        self.user_income = income
 
-        # Store the current images so they are not removed
-        # from memory by Tkinter.
-        self.investment_image = None
-        self.question_image = None
-        self.results_image = None
-        self.background_image = None
 
+    # get current question function
 
-        # Set the title displayed at the top of the window.
-        self.root.title("Investment Recommendation Quiz")
+    # Returns the current Question object.
 
+    def get_current_question(self):
 
-        # Set the size of the window.
-        # 600 = width
-        # 740 = height
-        self.root.geometry("600x800")
-
-
-        # Find the folder where the Python file is located.
-        self.folder = os.path.dirname(
-            os.path.abspath(__file__)
-        )
-
-
-        # PROFILES
-
-        # Build the full path to the profiles file. This file
-        # stores every user's quiz history as JSON so returning
-        # users can look back at their past results.
-        self.profiles_path = os.path.join(
-            self.folder,
-            "profiles.json"
-        )
-
-
-        # BACKGROUND IMAGES
-
-        # Store the filenames for all of the background images
-        # the user is allowed to choose between.
-        #
-        # You can add more filenames to this list if you want
-        # more than 4 backgrounds - just make sure the image
-        # file is in the same folder as this program.
-        self.background_filenames = [
-            "background.png",
-            "background2.png",
-            "background3.png",
-            "background4.png"
-        ]
-
-        # Store the full file path for each background image.
-        self.background_paths = [
-            os.path.join(self.folder, filename)
-            for filename in self.background_filenames
-        ]
-
-        # Keep track of which background is currently selected.
-        # 0 means the first background in the list.
-        self.current_background_index = 0
-
-        # Find the background image inside the same folder.
-        background_path = self.background_paths[
-            self.current_background_index
-        ]
-
-        # Load the background image.
-        self.background_image = tk.PhotoImage(
-            file=background_path
-        )
-
-        # Create a label to display the background image.
-        self.background_label = tk.Label(
-            self.root,
-            image=self.background_image
-        )
-
-        # Make the background fill the entire window.
-        self.background_label.place(
-            x=0,
-            y=0,
-            relwidth=1,
-            relheight=1
-        )
-
-        # Put the background behind all other widgets.
-        self.background_label.lower()
-
-
-        # title
-
-        # Create a label for the title.
-        self.title = tk.Label(
-            self.root,
-            text="Investment Recommendation Quiz",
-            font=("Arial", 20)
-        )
-
-
-        # Put the title inside the window.
-        self.title.pack(pady=20)
-
-
-        # find the background music file
-        self.music_path = os.path.join(
-            self.folder,
-            "music.mp3"
-        )
-
-
-        # Find the image inside the same folder.
-        image_path = os.path.join(
-            self.folder,
-            "image.png"
-        )
-
-
-        # Load the investment image.
-        self.investment_image = tk.PhotoImage(
-            file=image_path
-        )
-
-
-        # Make the image smaller.
-        self.investment_image = self.investment_image.subsample(
-            3,
-            3
-        )
-
-
-        # Create a label to display the image.
-        self.image_label = tk.Label(
-            self.root,
-            image=self.investment_image
-        )
-
-
-        # Put the image underneath the title.
-        self.image_label.pack(pady=5)
-
-
-        # Find the results image.
-        self.results_image_path = os.path.join(
-            self.folder,
-            "results.png"
-        )
-
-
-        # Store the results image.
-        self.results_image = None
-
-
-        # Create a label to display the results image.
-        self.results_image_label = tk.Label(
-            self.root
-        )
-
-
-        # user details
-
-        # Create a label asking the user for their name.
-        self.name_label = tk.Label(
-            self.root,
-            text="Enter your name:",
-            font=("Arial", 12)
-        )
-
-        self.name_label.pack()
-
-
-        # Create a box where the user can enter their name.
-        self.name_entry = tk.Entry(
-            self.root,
-            font=("Arial", 12)
-        )
-
-        self.name_entry.pack(pady=5)
-
-
-        # Create a label asking the user for their age.
-        self.age_label = tk.Label(
-            self.root,
-            text="Enter your age:",
-            font=("Arial", 12)
-        )
-
-        self.age_label.pack()
-
-
-        # Create a box where the user can enter their age.
-        self.age_entry = tk.Entry(
-            self.root,
-            font=("Arial", 12)
-        )
-
-        self.age_entry.pack(pady=5)
-
-
-        # Create a label asking the user for their income.
-        self.income_label = tk.Label(
-            self.root,
-            text="Enter your annual income:",
-            font=("Arial", 12)
-        )
-
-        self.income_label.pack()
-
-
-        # Create a box where the user can enter their income.
-        self.income_entry = tk.Entry(
-            self.root,
-            font=("Arial", 12)
-        )
-
-        self.income_entry.pack(pady=5)
-
-
-        # Create a label asking the user for a password.
-        # This password protects their profile so other people
-        # can't view their results using their name.
-        self.password_label = tk.Label(
-            self.root,
-            text="Enter a password (used to protect your results):",
-            font=("Arial", 12)
-        )
-
-        self.password_label.pack()
-
-
-        # Create a box where the user can enter their password.
-        # show="*" hides the characters as they are typed, the
-        # same way a normal password box works.
-        self.password_entry = tk.Entry(
-            self.root,
-            font=("Arial", 12),
-            show="*"
-        )
-
-        self.password_entry.pack(pady=5)
-
-
-        # Store the paths for each question image.
-        self.question_image_paths = [
-
-            os.path.join(
-                self.folder,
-                "question1.png"
-            ),
-
-            os.path.join(
-                self.folder,
-                "question2.png"
-            ),
-
-            os.path.join(
-                self.folder,
-                "question3.png"
-            ),
-
-            os.path.join(
-                self.folder,
-                "question4.png"
-            ),
-
-            os.path.join(
-                self.folder,
-                "question5.png"
-            )
+        return self.questions[
+            self.current_question
         ]
 
 
-        # Store the current question image.
-        self.question_image = None
+    # get question count function
 
+    # Returns the number of questions.
 
-        # Create a label to display the question images.
-        self.question_image_label = tk.Label(
-            self.root
+    def get_question_count(self):
+
+        return len(
+            self.questions
         )
 
 
-        # question label
+    # get current question number function
 
-        # This label will display the current question.
-        self.question_label = tk.Label(
-            self.root,
-            text="",
-            font=("Arial", 15),
-            wraplength=500
-        )
+    # Returns the question number in a user-friendly format.
 
+    def get_current_question_number(self):
 
-        # This label will display which question the user is on.
-        self.progress_label = tk.Label(
-            self.root,
-            text="",
-            font=("Arial", 12)
-        )
+        return self.current_question + 1
 
 
-        # Create the progress bar.
-        self.progress_bar = tk.Canvas(
-            self.root,
-            width=400,
-            height=22,
-            bg="white",
-            highlightthickness=1
-        )
+    # answer question function
 
+    # Adds the selected answer's score and stores the answer.
 
-        # Create the percentage text inside the progress bar.
-        self.progress_bar_text = self.progress_bar.create_text(
-            200,
-            11,
-            text="0%",
-            font=("Arial", 10)
-        )
+    def answer_question(self, answer_index):
 
+        if answer_index < 0:
+            return False
 
-        # answer variable
-
-        # IntVar is used by Tkinter to store which
-        # radio button the user has selected.
-        #
-        # -1 means that no answer has been selected yet.
-        self.choice = tk.IntVar(
-            value=-1
-        )
-
-
-        # radio buttons
-
-        # This list will store all of the radio buttons.
-        self.buttons = []
-
-
-        # Create three radio buttons because each question
-        # has three possible answers.
-        for i in range(3):
-
-            # Create a radio button.
-            button = tk.Radiobutton(
-                self.root,
-
-                # The text will be changed when a question loads.
-                text="",
-
-                # Connect the button to the choice variable.
-                variable=self.choice,
-
-                # Each button gets a different value.
-                value=i,
-
-                font=("Arial", 12)
-            )
-
-            # Place the button on the screen.
-            self.buttons.append(button)
-
-
-        # Create a frame to hold the Next and Back buttons.
-        self.button_frame = tk.Frame(
-            self.root
-        )
-
-
-        # Create the Next button.
-        self.next_button = tk.Button(
-            self.button_frame,
-            text="Next",
-            command=self.next_question,
-            font=("Arial", 12)
-        )
-
-
-        # Create the Back button.
-        self.back_button = tk.Button(
-            self.button_frame,
-            text="Back",
-            command=self.back_question,
-            font=("Arial", 12)
-        )
-
-
-        # Create a frame to hold the Save Results and Restart Quiz buttons.
-        self.results_button_frame = tk.Frame(
-            self.root
-        )
-
-
-        # Hide the results button frame until the quiz finishes.
-        self.results_button_frame.pack_forget()
-
-
-        # Create the Save Results button.
-        self.save_button = tk.Button(
-            self.results_button_frame,
-            text="Save Results",
-            command=self.save_results,
-            font=("Arial", 12)
-        )
-
-
-        # Create the Restart Quiz button.
-        self.restart_button = tk.Button(
-            self.results_button_frame,
-            text="Restart Quiz",
-            command=self.restart_quiz,
-            font=("Arial", 12)
-        )
-
-
-        # Create a frame for the investment allocation chart.
-        self.chart_frame = tk.Frame(
-            self.root
-        )
-
-
-        # Hide the chart until the quiz finishes.
-        self.chart_frame.pack_forget()
-
-
-        # Hide the button frame until the quiz starts.
-        self.button_frame.pack_forget()
-
-
-        # disclaimer
-
-        # Create a label for the disclaimer.
-        self.disclaimer = tk.Label(
-            self.root,
-            text="",
-            font=("Arial", 9)
-        )
-
-
-        # NOTE: The disclaimer is intentionally NOT packed here.
-        # It has no background image behind it, so packing it while
-        # it's still empty just shows up as a plain grey box on the
-        # start screen. It only gets packed (in show_results) once
-        # it actually has text to display, and gets hidden again
-        # in restart_quiz.
-
-
-        # Start button
-
-        # Create a button that starts the quiz.
-        # This button is part of the question section.
-        self.start_button = tk.Button(
-            self.root,
-            text="Start Questions",
-            command=self.get_user_details,
-            font=("Arial", 12)
-        )
-
-        self.start_button.pack(
-            pady=15
-        )
-
-
-        # view history button
-
-        # Create a button that lets a returning user look up their
-        # past quiz results, using the name they've typed above
-        # as their profile name.
-        self.view_history_button = tk.Button(
-            self.root,
-            text="View My History",
-            command=self.view_history,
-            font=("Arial", 11)
-        )
-
-        self.view_history_button.pack(
-            pady=5
-        )
-
-
-        # music button
-
-        # create a button that allows the user to turn
-        # background music on and off
-        self.music_button = tk.Button(
-            self.root,
-            text="Music: Off",
-            command=self.toggle_music,
-            font=("Arial", 11)
-        )
-
-        # keep the music button visible at the bottom of every screen
-        self.music_button.pack(
-            side="bottom",
-            pady=10
-        )
-
-
-        # background button
-
-        # create a button that opens the background picker window
-        self.background_button = tk.Button(
-            self.root,
-            text="Change Background",
-            command=self.open_background_picker,
-            font=("Arial", 11)
-        )
-
-        # keep the background button visible at the bottom of every screen,
-        # right next to the music button
-        self.background_button.pack(
-            side="bottom",
-            pady=10
-        )
-
-
-    # music function
-
-    # this function starts the background music
-    def start_music(self):
-
-        # check if pygame is installed
-        if not self.music_available:
-
-            # tell the user how to install pygame
-            messagebox.showinfo(
-                "Music Not Available",
-                "Background music is currently unavailable because pygame "
-                "is not installed.\n\n"
-                "To install pygame:\n\n"
-                "1. Open Command Prompt or Terminal.\n"
-                "2. Type:\n\n"
-                "pip install pygame\n\n"
-                "3. Press Enter.\n"
-                "4. Restart this program."
-            )
-
-            return
-
-
-        try:
-
-            # check if the music file exists
-            if not os.path.exists(
-                self.music_path
-            ):
-
-                messagebox.showwarning(
-                    "Music File Not Found",
-                    "Could not find music.mp3.\n\n"
-                    "Put music.mp3 in the same folder as "
-                    "your Python program."
-                )
-
-                return
-
-
-            # only initialise pygame if music is not already playing
-            if not self.music_playing:
-
-                # start pygame's music system
-                pygame.mixer.init()
-
-                # load the music file
-                pygame.mixer.music.load(
-                    self.music_path
-                )
-
-                # play the music continuously
-                pygame.mixer.music.play(
-                    -1
-                )
-
-                # record that music is playing
-                self.music_playing = True
-
-                # update the button text
-                self.music_button.config(
-                    text="Music: On"
-                )
-
-
-        except Exception as error:
-
-            # show an error if the music cannot play
-            messagebox.showwarning(
-                "Music Error",
-                "The music could not be played.\n\n" +
-                str(error)
-            )
-
-
-    # stop music function
-
-    # this function stops the background music
-    def stop_music(self):
-
-        # check that pygame is available
-        if self.music_available:
-
-            # only stop music if it is playing
-            if self.music_playing:
-
-                try:
-
-                    # stop the music
-                    pygame.mixer.music.stop()
-
-                    # update the music status
-                    self.music_playing = False
-
-                    # update the button text
-                    self.music_button.config(
-                        text="Music: Off"
-                    )
-
-                except Exception:
-
-                    # prevent errors if pygame has already closed
-                    pass
-
-
-    # toggle music function
-
-    # this function switches the music on and off
-    def toggle_music(self):
-
-        # check whether music is currently playing
-        if self.music_playing:
-
-            # turn the music off
-            self.stop_music()
-
-        else:
-
-            # turn the music on
-            self.start_music()
-
-
-    # background picker function
-
-    # this function opens a small pop-up window that lets the
-    # user choose which background image they want to use
-    def open_background_picker(self):
-
-        # Create a new pop-up window on top of the main window.
-        picker_window = tk.Toplevel(
-            self.root
-        )
-
-        picker_window.title(
-            "Choose a Background"
-        )
-
-        picker_window.geometry(
-            "300x600"
-        )
-
-        # Stop the user resizing the pop-up window.
-        picker_window.resizable(
-            False,
-            False
-        )
-
-        # Make the pop-up stay in front of the main window.
-        picker_window.transient(
-            self.root
-        )
-
-
-        # Add a heading label inside the pop-up window.
-        heading = tk.Label(
-            picker_window,
-            text="Select a background image:",
-            font=("Arial", 13)
-        )
-
-        heading.pack(
-            pady=10
-        )
-
-
-        # This list keeps the small preview images in memory so
-        # Tkinter does not delete them while the window is open.
-        self.background_previews = []
-
-
-        # Create a small thumbnail button for each background image.
-        for index, path in enumerate(
-            self.background_paths
+        if answer_index >= len(
+            self.get_current_question().options
         ):
+            return False
 
-            # Check the background image file actually exists
-            # before trying to load it.
-            if not os.path.exists(
-                path
-            ):
+        question = self.get_current_question()
 
-                # Skip missing files instead of crashing, and let
-                # the user know it could not be found.
-                missing_label = tk.Label(
-                    picker_window,
-                    text=self.background_filenames[index] +
-                    " not found",
-                    font=("Arial", 10),
-                    fg="red"
-                )
-
-                missing_label.pack(
-                    pady=5
-                )
-
-                continue
-
-
-            # Load a small preview version of the background image.
-            preview_image = tk.PhotoImage(
-                file=path
-            )
-
-            # Shrink the preview so four images fit on screen.
-            preview_image = preview_image.subsample(
-                10,
-                10
-            )
-
-            # Keep a reference so the image is not garbage collected.
-            self.background_previews.append(
-                preview_image
-            )
-
-
-            # Create a button showing the thumbnail. Clicking it
-            # selects that background image.
-            #
-            # "index=index" is used to lock in the current value of
-            # index for this button, since the loop variable changes.
-            preview_button = tk.Button(
-                picker_window,
-                image=preview_image,
-                text=self.background_filenames[index],
-                compound="top",
-                font=("Arial", 9),
-                command=lambda index=index: self.change_background(
-                    index,
-                    picker_window
-                )
-            )
-
-            preview_button.pack(
-                pady=8
-            )
-
-
-        # Add a close button so the user can dismiss the window
-        # without changing the background.
-        close_button = tk.Button(
-            picker_window,
-            text="Close",
-            command=picker_window.destroy,
-            font=("Arial", 10)
-        )
-
-        close_button.pack(
-            pady=10
-        )
-
-
-    # change background function
-
-    # this function swaps the main window's background image
-    # to the one the user picked
-    def change_background(self, index, picker_window):
-
-        # Get the file path for the background the user picked.
-        chosen_path = self.background_paths[
-            index
+        self.score += question.scores[
+            answer_index
         ]
 
-        try:
-
-            # Load the full-size background image.
-            self.background_image = tk.PhotoImage(
-                file=chosen_path
-            )
-
-            # Update the background label to show the new image.
-            self.background_label.config(
-                image=self.background_image
-            )
-
-            # Remember which background is currently selected.
-            self.current_background_index = index
-
-        except Exception as error:
-
-            # If the image could not be loaded, warn the user
-            # instead of crashing the program.
-            messagebox.showwarning(
-                "Background Error",
-                "That background image could not be loaded.\n\n" +
-                str(error)
-            )
-
-            return
-
-
-        # Close the picker window now that a background has
-        # been chosen.
-        picker_window.destroy()
-
-
-    # close program function
-
-    # this function stops music and closes the program
-    def close_program(self):
-
-        # stop music
-        self.stop_music()
-
-        # close the tkinter window
-        self.root.destroy()
-
-
-    # user details function
-
-    def get_user_details(self):
-
-        # gets the user's name from the entry box and removes extra spaces
-        self.user_name = self.name_entry.get().strip()
-
-        # gets the user's age from the entry box
-        age = self.age_entry.get().strip()
-
-        # gets the user's income from the entry box
-        income = self.income_entry.get().strip()
-
-
-        # checks if the user has left the name entry box empty
-        if self.user_name == "":
-            messagebox.showwarning(
-                "No Name",
-                "Please enter your name."
-            )
-            return
-
-
-        # checks if the user has left the age entry box empty
-        if age == "":
-            messagebox.showwarning(
-                "No Age",
-                "Please enter your age."
-            )
-            return
-
-
-        # tries to convert the age entered by the user into a whole number
-        try:
-            self.user_age = int(age)
-
-        # shows a warning if the age is not a valid number
-        except ValueError:
-            messagebox.showwarning(
-                "Invalid Age",
-                "Please enter your age as a number."
-            )
-            return
-
-
-        # checks that the user's age is within the allowed range of 16-18
-        if self.user_age < 16 or self.user_age > 18:
-            messagebox.showwarning(
-                "Invalid Age",
-                "This quiz is designed for users aged 16-18."
-            )
-            return
-
-
-        # checks if the user has left the income entry box empty
-        if income == "":
-            messagebox.showwarning(
-                "No Income",
-                "Please enter your annual income."
-            )
-            return
-
-
-        # tries to convert the income entered by the user into a decimal number
-        try:
-            self.user_income = float(income)
-
-        # shows a warning if the income is not a valid number
-        except ValueError:
-            messagebox.showwarning(
-                "Invalid Income",
-                "Please enter your income as a number."
-            )
-            return
-
-
-        # checks that the user's income is not a negative value
-        if self.user_income < 0:
-            messagebox.showwarning(
-                "Invalid Income",
-                "Income cannot be negative."
-            )
-            return
-
-
-        # gets the user's password from the entry box
-        password = self.password_entry.get().strip()
-
-        # checks if the user has left the password entry box empty
-        if password == "":
-            messagebox.showwarning(
-                "No Password",
-                "Please enter a password. If this is your first "
-                "time using this name, this password will be used "
-                "to protect your results in future."
-            )
-            return
-
-
-        # checks that the password is at least 6 characters long
-        if len(password) < 6:
-            messagebox.showwarning(
-                "Password Too Short",
-                "Your password must be at least 6 characters long."
-            )
-            return
-
-
-        # Check this name/password combination against the saved
-        # profiles before letting the user continue.
-        if not self.check_login(self.user_name, password):
-
-            # check_login() already shows a warning message box
-            # explaining what went wrong, so we just stop here.
-            return
-
-
-        # hides inputs after user details are accepted
-        self.name_label.pack_forget()
-        self.name_entry.pack_forget()
-
-        self.age_label.pack_forget()
-        self.age_entry.pack_forget()
-
-        self.income_label.pack_forget()
-        self.income_entry.pack_forget()
-
-        self.password_label.pack_forget()
-        self.password_entry.pack_forget()
-
-        self.start_button.pack_forget()
-
-        # Hide the view history button now that the quiz is starting.
-        self.view_history_button.pack_forget()
-
-        # Hide the user details image when the quiz starts.
-        self.image_label.pack_forget()
-
-        self.title.config(
-            text="Welcome " + self.user_name + "!"
-        )
-
-        # Fade the welcome message in.
-        self.fade_in_label(
-            self.title
-        )
-
-        self.load_question()
-
-
-    # load question function
-
-    # This function displays the current question.
-    def load_question(self):
-
-        # Reset selected answer
-        self.choice.set(-1)
-
-        # Get current question
-        question = self.questions[
-            self.current_question
-        ]
-
-
-        # Load the image for the current question.
-        self.question_image = tk.PhotoImage(
-            file=self.question_image_paths[
-                self.current_question
-            ]
-        )
-
-
-        # Make the image smaller.
-        self.question_image = self.question_image.subsample(
-            2,
-            2
-        )
-
-
-        # Display the current question image.
-        self.question_image_label.config(
-            image=self.question_image
-        )
-
-        # Slide the question image into place instead of just
-        # snapping it straight onto the screen.
-        self.slide_in_label(
-            self.question_image_label,
-            target_pady=5
-        )
-
-
-        # Display the current question number.
-        self.progress_label.config(
-            text="Question " +
-            str(self.current_question + 1) +
-            " of " +
-            str(len(self.questions))
-        )
-
-        self.progress_label.pack(
-            pady=5
-        )
-
-
-        # Update the visual progress bar.
-        self.update_progress_bar()
-
-
-        # Change the question label to display
-        # the current question.
-        self.question_label.config(
-            text=question.question,
-            font=("Arial", 15)
-        )
-
-        self.question_label.pack(
-            pady=15
-        )
-
-        # Fade the question text in so each new question feels
-        # smoother rather than just appearing instantly.
-        self.fade_in_label(
-            self.question_label
-        )
-
-
-        # Change each radio button to display
-        # the current question's options.
-        for i in range(3):
-
-            self.buttons[i].config(
-                text=question.options[i]
-            )
-
-            self.buttons[i].pack(
-                anchor="w",
-                padx=150
-            )
-
-
-        # Show the button frame
-        self.button_frame.pack(
-            pady=20
-        )
-
-
-        # Show the Back button after the first question.
-        if self.current_question > 0:
-
-            self.back_button.pack(
-                side="left",
-                padx=10
-            )
-
-        else:
-
-            self.back_button.pack_forget()
-
-
-        # Show the Next button.
-        self.next_button.pack(
-            side="left",
-            padx=10
-        )
-
-
-    # fade in function
-
-    # This function creates a simple fade-in animation for a
-    # label by gradually changing its text colour from light
-    # grey to black. Tkinter cannot fade images or true
-    # transparency, but fading the text colour gives a similar
-    # "appearing" effect without needing any extra libraries.
-    def fade_in_label(self, label, steps=12, delay=25):
-
-        # If this label already has an animation running (e.g. the
-        # user clicked Next very quickly), cancel it first so two
-        # animations don't fight over the same label.
-        existing_job = getattr(label, "_fade_job", None)
-
-        if existing_job is not None:
-            self.root.after_cancel(existing_job)
-
-        # Start colour (light grey, close to invisible on a
-        # white/light background) and end colour (black).
-        start_rgb = (245, 245, 245)
-        end_rgb = (0, 0, 0)
-
-        # This inner function runs one frame of the animation,
-        # then schedules the next frame using root.after().
-        def animate(step):
-
-            # Stop once we have reached the final step.
-            if step > steps:
-                label.config(fg="#000000")
-                label._fade_job = None
-                return
-
-            # Work out how far through the animation we are (0 to 1).
-            fraction = step / steps
-
-            # Blend the start and end colours together based on
-            # how far through the animation we are.
-            red = int(start_rgb[0] + (end_rgb[0] - start_rgb[0]) * fraction)
-            green = int(start_rgb[1] + (end_rgb[1] - start_rgb[1]) * fraction)
-            blue = int(start_rgb[2] + (end_rgb[2] - start_rgb[2]) * fraction)
-
-            # Convert the blended colour into a hex code Tkinter understands.
-            colour = "#%02x%02x%02x" % (red, green, blue)
-
-            # Apply the colour to the label.
-            label.config(fg=colour)
-
-            # Schedule the next frame of the animation and remember
-            # the job id so it can be cancelled if needed.
-            label._fade_job = self.root.after(
-                delay,
-                lambda: animate(step + 1)
-            )
-
-        # Start the animation from step 0 (fully faded out).
-        animate(0)
-
-
-    # slide in function
-
-    # This function creates a simple slide-in animation for a
-    # widget by moving it upward into place while it fades in.
-    # It is used for the question image so the screen feels
-    # more dynamic when a new question loads.
-    def slide_in_label(self, label, target_pady=5, steps=10, delay=20):
-
-        # Cancel any slide animation already running on this label,
-        # so quickly clicking Next/Back doesn't cause two animations
-        # to run at once.
-        existing_job = getattr(label, "_slide_job", None)
-
-        if existing_job is not None:
-            self.root.after_cancel(existing_job)
-
-        # Temporarily hide the label so we can animate it appearing.
-        label.pack_forget()
-
-        # This inner function runs one frame of the slide animation.
-        def animate(step):
-
-            if step > steps:
-
-                # Snap to the final resting position.
-                label.pack(pady=target_pady)
-                label._slide_job = None
-
-                return
-
-            # Start further down (larger pady) and move up to the
-            # target pady as the animation progresses.
-            extra_gap = int((steps - step) * 4)
-
-            label.pack_forget()
-
-            label.pack(
-                pady=target_pady + extra_gap
-            )
-
-            label._slide_job = self.root.after(
-                delay,
-                lambda: animate(step + 1)
-            )
-
-        animate(0)
-
-
-    # progress bar function
-
-    # This function updates the visual progress bar.
-    def update_progress_bar(self):
-
-        # Remove the old progress bar.
-        self.progress_bar.delete(
-            "bar"
-        )
-
-
-        # Calculate the percentage completed.
-        percentage = int(
-            (
-                (self.current_question + 1)
-                / len(self.questions)
-            ) * 100
-        )
-
-
-        # Calculate how wide the progress bar should be.
-        bar_width = int(
-            400 * percentage / 100
-        )
-
-
-        # Draw the completed section of the progress bar.
-        self.progress_bar.create_rectangle(
-            0,
-            0,
-            bar_width,
-            22,
-            fill="green",
-            tags="bar"
-        )
-
-
-        # Change the percentage text.
-        self.progress_bar.itemconfig(
-            self.progress_bar_text,
-            text=str(percentage) + "%"
-        )
-
-
-        # Make sure the percentage appears above the bar.
-        self.progress_bar.tag_raise(
-            self.progress_bar_text
-        )
-
-
-        # Display the progress bar.
-        self.progress_bar.pack(
-            pady=5
-        )
-
-
-    # BACK BUTTON
-
-    def back_question(self):
-
-        # Only go back if we are not on question 1
-        if self.current_question > 0:
-
-            # Get the previous answer
-            previous_answer = self.answer_history.pop()
-
-            # Remove the previous answer's score
-            self.score -= self.questions[
-                self.current_question - 1
-            ].scores[previous_answer]
-
-            # Move back one question
-            self.current_question -= 1
-
-            # Display the previous question
-            self.load_question()
-
-
-    # next question function
-
-    # This function runs when the user presses Next.
-    def next_question(self):
-
-        # Check if the user selected an answer.
-        # -1 means no answer was selected.
-        if self.choice.get() == -1:
-
-            # Display a warning if they haven't
-            # selected an answer.
-            messagebox.showwarning(
-                "No Answer",
-                "Please select an answer."
-            )
-
-            # Stop the function here.
-            return
-
-
-        # Add the score from the selected answer
-        # to the user's total score.
-        #
-        # choice.get() gives us the selected option.
-        # The scores list tells us how many points
-        # that option is worth.
-        self.score += self.questions[
-            self.current_question
-        ].scores[
-            self.choice.get()
-        ]
-
-
-        # Save the answer
         self.answer_history.append(
-            self.choice.get()
+            answer_index
         )
 
-
-        # Move to the next question
         self.current_question += 1
 
+        return True
 
-        # Check whether there are still questions left.
-        if self.current_question < len(
+
+    # go back function
+
+    # Removes the previous answer and moves back one question.
+
+    def go_back(self):
+
+        if self.current_question <= 0:
+            return False
+
+        previous_answer = self.answer_history.pop()
+
+        previous_question_index = (
+            self.current_question - 1
+        )
+
+        self.score -= self.questions[
+            previous_question_index
+        ].scores[
+            previous_answer
+        ]
+
+        self.current_question -= 1
+
+        return True
+
+
+    # quiz finished function
+
+    # Returns True if all questions have been answered.
+
+    def quiz_finished(self):
+
+        return self.current_question >= len(
             self.questions
-        ):
+        )
 
-            # If there are questions left,
-            # display the next question.
-            self.load_question()
+
+    # get profile function
+
+    # Calculates the user's risk profile from their score.
+
+    def get_profile(self):
+
+        if self.score <= AppConstants.CONSERVATIVE_MAX_SCORE:
+
+            return "Conservative"
+
+        elif self.score <= AppConstants.MODERATE_MAX_SCORE:
+
+            return "Moderate"
 
         else:
 
-            # If there are no questions left,
-            # display the final result.
-            self.show_results()
+            return "Growth"
 
 
-    # investment allocation chart function
+    # get profile information function
 
-    # This class creates the investment allocation chart.
-    class InvestmentChart:
+    # Returns the result text and recommendations.
 
-        def __init__(self, parent):
+    def get_result_information(self):
 
-            self.parent = parent
-            self.canvas = None
+        profile = self.get_profile()
 
+        if profile == "Conservative":
 
-        def show_allocation_chart(
-            self,
-            profile
-        ):
+            result = (
+                "Risk Profile: Conservative\n"
+                "You prefer lower levels of risk.\n\n"
+                "Suggested investments:\n"
+                "- Savings accounts\n"
+                "- Term deposits\n"
+                "- Bonds"
+            )
 
-            # Remove any previous chart.
-            for widget in self.parent.winfo_children():
+        elif profile == "Moderate":
 
-                widget.destroy()
+            result = (
+                "Risk Profile: Moderate\n"
+                "You are comfortable with some risk.\n\n"
+                "Suggested investments:\n"
+                "- Index funds\n"
+                "- Balanced funds\n"
+                "- Bonds"
+            )
 
+        else:
 
-            # Choose an allocation based on the risk profile.
-            if profile == "Conservative":
+            result = (
+                "Risk Profile: Growth\n"
+                "You are comfortable with higher risk.\n\n"
+                "Suggested investments:\n"
+                "- Growth ETFs\n"
+                "- Shares\n"
+                "- Global index funds"
+            )
 
-                labels = [
-                    "Savings",
-                    "Bonds",
-                    "Index Funds"
-                ]
-
-                values = [
-                    50,
-                    35,
-                    15
-                ]
-
-
-            elif profile == "Moderate":
-
-                labels = [
-                    "Index Funds",
-                    "Bonds",
-                    "Savings"
-                ]
-
-                values = [
-                    50,
-                    30,
-                    20
-                ]
+        return result
 
 
-            else:
+    # get income suggestion function
 
-                labels = [
-                    "Growth ETFs",
-                    "Global Index Funds",
-                    "Shares"
-                ]
+    # Creates an additional recommendation based on income.
 
-                values = [
-                    45,
-                    35,
-                    20
-                ]
+    def get_income_suggestion(self):
 
+        if self.user_income < AppConstants.LOW_INCOME_LIMIT:
 
-            # Create the pie chart.
-            figure = Figure(
-                figsize=(4, 2.2),
-                dpi=100
+            return (
+                "\n\nIncome Suggestion:\n"
+                "Consider building your savings before making "
+                "larger investments."
+            )
+
+        elif self.user_income <= AppConstants.HIGH_INCOME_LIMIT:
+
+            return (
+                "\n\nIncome Suggestion:\n"
+                "Consider starting with smaller, diversified "
+                "investments."
+            )
+
+        else:
+
+            return (
+                "\n\nIncome Suggestion:\n"
+                "You may have more flexibility to consider a "
+                "wider range of investments."
             )
 
 
-            axis = figure.add_subplot(
-                111
-            )
+    # get complete result function
 
+    # This provides all information needed by the GUI.
 
-            # Add the sections to the pie chart.
-            axis.pie(
-                values,
-                labels=labels,
-                autopct="%1.0f%%",
-                startangle=90
-            )
+    def get_complete_result(self):
 
-
-            # Add a title to the chart.
-            axis.set_title(
-                "Suggested Investment Allocation"
-            )
-
-
-            # Display the chart inside Tkinter.
-            self.canvas = FigureCanvasTkAgg(
-                figure,
-                master=self.parent
-            )
-
-            self.canvas.draw()
-
-            self.canvas.get_tk_widget().pack()
-
-
-    # Create the investment chart object.
-    def create_chart(self):
-
-        self.chart = self.InvestmentChart(
-            self.chart_frame
+        return (
+            self.get_result_information()
+            + self.get_income_suggestion()
         )
+
+
+# profile manager
+
+# This class handles JSON storage, profiles and passwords.
+#
+# It does NOT create Tkinter widgets.
+# It does NOT control the quiz GUI.
+#
+# The GUI communicates with it through methods.
+
+class ProfileManager:
+
+    def __init__(self, profiles_path):
+
+        self.profiles_path = profiles_path
 
 
     # hash password function
 
-    # This function turns a plain text password into a hash - a
-    # scrambled, fixed-length code that always looks the same for
-    # the same password, but cannot be reversed back into the
-    # original password. We store this hash instead of storing
-    # the actual password, so the password itself is never saved
-    # anywhere in the file.
+    # This converts a password into a secure hash.
+
     def hash_password(self, password):
 
         return hashlib.sha256(
@@ -1629,113 +385,10 @@ class InvestmentQuiz:
         ).hexdigest()
 
 
-    # ensure profile format function
-
-    # Older versions of this program saved each profile as a
-    # plain list of past attempts. This function checks for that
-    # old format and converts it into the new format, which also
-    # stores a password hash. This means the program won't crash
-    # if it is run using a profiles.json file saved by an older
-    # version of the code.
-    def ensure_profile_format(self, profiles, profile_key):
-
-        if profile_key in profiles and isinstance(
-            profiles[profile_key],
-            list
-        ):
-
-            profiles[profile_key] = {
-                "password_hash": None,
-                "history": profiles[profile_key]
-            }
-
-        return profiles
-
-
-    # check login function
-
-    # This function checks a name and password combination
-    # against the saved profiles, and creates a new password
-    # protected profile the first time a name is used.
-    #
-    # Returns True if the user is allowed to continue, and False
-    # if they should not be (showing a suitable warning message
-    # in that case).
-    def check_login(self, username, password):
-
-        profiles = self.load_profiles()
-
-        profile_key = username.lower()
-
-        # Convert any old-format data for this profile first.
-        profiles = self.ensure_profile_format(
-            profiles,
-            profile_key
-        )
-
-
-        # If this name has never been used before, create a new
-        # profile for it and protect it with the password that
-        # was just entered.
-        if profile_key not in profiles:
-
-            profiles[profile_key] = {
-                "password_hash": self.hash_password(password),
-                "history": []
-            }
-
-            self.save_profiles(
-                profiles
-            )
-
-            return True
-
-
-        stored_hash = profiles[profile_key].get(
-            "password_hash"
-        )
-
-
-        # If an older profile exists with no password saved yet,
-        # the first person to log in with the correct name claims
-        # it by setting this password on it.
-        if stored_hash is None:
-
-            profiles[profile_key]["password_hash"] = self.hash_password(
-                password
-            )
-
-            self.save_profiles(
-                profiles
-            )
-
-            return True
-
-
-        # Otherwise, this name already has a password - check that
-        # the password entered matches it.
-        if stored_hash != self.hash_password(password):
-
-            messagebox.showwarning(
-                "Incorrect Password",
-                "That password doesn't match the one saved for \"" +
-                username +
-                "\".\n\nIf this isn't your name, please use a "
-                "different one."
-            )
-
-            return False
-
-
-        return True
-
-
     # load profiles function
 
-    # This function reads the profiles.json file and returns it
-    # as a dictionary. If the file doesn't exist yet, or the file
-    # is damaged/unreadable, an empty dictionary is returned so
-    # the program can keep running instead of crashing.
+    # Loads profile information from the JSON file.
+
     def load_profiles(self):
 
         if not os.path.exists(
@@ -1755,17 +408,18 @@ class InvestmentQuiz:
                 return json.load(file)
 
 
-        except (OSError, json.JSONDecodeError):
+        except (
+            OSError,
+            json.JSONDecodeError
+        ):
 
-            # If the file can't be read or the JSON is corrupted,
-            # treat it as if there were no saved profiles.
             return {}
 
 
     # save profiles function
 
-    # This function writes the whole profiles dictionary back to
-    # profiles.json.
+    # Saves profile information to the JSON file.
+
     def save_profiles(self, profiles):
 
         try:
@@ -1781,40 +435,142 @@ class InvestmentQuiz:
                     indent=2
                 )
 
+            return True
 
-        except OSError as error:
+        except OSError:
 
-            messagebox.showerror(
-                "Save Failed",
-                "Your profile history could not be saved.\n\n" +
-                str(error)
-            )
+            return False
 
 
-    # save profile entry function
+    # ensure profile format function
 
-    # This function adds the current quiz attempt to the user's
-    # profile history inside profiles.json. Profiles are matched
-    # by name, using lowercase so "John" and "john" are treated as the same person.
-    def save_profile_entry(self):
+    # Converts profiles from older versions into the new format.
 
-        # Load whatever profile history already exists.
+    def ensure_profile_format(
+        self,
+        profiles,
+        profile_key
+    ):
+
+        if profile_key in profiles and isinstance(
+            profiles[profile_key],
+            list
+        ):
+
+            profiles[profile_key] = {
+                "password_hash": None,
+                "history": profiles[profile_key]
+            }
+
+        return profiles
+
+
+    # check login function
+
+    # Checks whether a username and password are valid.
+    #
+    # This function returns information to the GUI rather than
+    # displaying message boxes itself.
+
+    def check_login(
+        self,
+        username,
+        password
+    ):
+
         profiles = self.load_profiles()
 
-        # Use a lowercase version of the name as the lookup key,
-        # so names are matched regardless of capitalisation.
-        profile_key = self.user_name.lower()
+        profile_key = username.lower()
 
-        # Convert any old-format data for this profile first.
         profiles = self.ensure_profile_format(
             profiles,
             profile_key
         )
 
-        # By the time this function runs the user has already
-        # logged in through check_login(), so their profile should
-        # already exist. This is just a safety net in case it
-        # doesn't, so saving never crashes the program.
+
+        # create a new profile
+
+        if profile_key not in profiles:
+
+            profiles[profile_key] = {
+                "password_hash": self.hash_password(
+                    password
+                ),
+                "history": []
+            }
+
+            if not self.save_profiles(
+                profiles
+            ):
+
+                return False, "Could not save the new profile."
+
+            return True, "New profile created."
+
+
+        stored_hash = profiles[
+            profile_key
+        ].get(
+            "password_hash"
+        )
+
+
+        # add a password to an older profile
+
+        if stored_hash is None:
+
+            profiles[
+                profile_key
+            ][
+                "password_hash"
+            ] = self.hash_password(
+                password
+            )
+
+            if not self.save_profiles(
+                profiles
+            ):
+
+                return False, "Could not save the profile."
+
+            return True, "Password added to profile."
+
+
+        # check existing password
+
+        if stored_hash != self.hash_password(
+            password
+        ):
+
+            return False, "Incorrect password."
+
+
+        return True, "Login successful."
+
+
+    # save quiz attempt function
+
+    # Adds a completed quiz to the user's JSON history.
+
+    def save_quiz_attempt(
+        self,
+        username,
+        age,
+        income,
+        score,
+        profile
+    ):
+
+        profiles = self.load_profiles()
+
+        profile_key = username.lower()
+
+        profiles = self.ensure_profile_format(
+            profiles,
+            profile_key
+        )
+
+
         if profile_key not in profiles:
 
             profiles[profile_key] = {
@@ -1823,454 +579,389 @@ class InvestmentQuiz:
             }
 
 
-        # Work out the risk profile again so it can be stored
-        # alongside this attempt.
-        if self.score <= 7:
-
-            profile = "Conservative"
-
-        elif self.score <= 11:
-
-            profile = "Moderate"
-
-        else:
-
-            profile = "Growth"
-
-
-        # Build a record of this quiz attempt.
         entry = {
             "date": datetime.datetime.now().strftime(
                 "%Y-%m-%d %H:%M"
             ),
-            "display_name": self.user_name,
-            "age": self.user_age,
-            "income": self.user_income,
-            "score": self.score,
+            "display_name": username,
+            "age": age,
+            "income": income,
+            "score": score,
             "profile": profile
         }
 
 
-        # Add this attempt to the user's history.
-        profiles[profile_key]["history"].append(
+        profiles[
+            profile_key
+        ][
+            "history"
+        ].append(
             entry
         )
 
 
-        # Save the updated profiles back to the file.
-        self.save_profiles(
+        return self.save_profiles(
             profiles
         )
 
 
-    # view history function
+    # get history function
 
-    # This function opens a pop-up window showing all of the
-    # past quiz attempts saved for whichever name is currently
-    # typed into the name entry box.
-    def view_history(self):
+    # Returns a user's previous quiz attempts.
 
-        # This button is only ever visible on the welcome screen,
-        # at the same time as the name and password boxes, so we can read directly from them.
-        username = self.name_entry.get().strip()
+    def get_history(
+        self,
+        username,
+        password
+    ):
 
-        password = self.password_entry.get().strip()
-
-
-        # Make sure a name has actually been entered.
-        if username == "":
-
-            messagebox.showwarning(
-                "No Name",
-                "Please enter your name first so we know whose "
-                "history to look up."
-            )
-
-            return
-
-
-        # Load all saved profiles.
         profiles = self.load_profiles()
 
         profile_key = username.lower()
 
-        # Convert any old-format data for this profile first.
         profiles = self.ensure_profile_format(
             profiles,
             profile_key
         )
 
 
-        # Check whether this name has any saved history at all.
-        if profile_key not in profiles or len(
-            profiles[profile_key]["history"]
-        ) == 0:
+        if profile_key not in profiles:
 
-            messagebox.showinfo(
-                "No History Found",
-                "No past results were found for \"" +
-                username +
-                "\".\n\nComplete the quiz and click Save Results "
-                "to start building your history."
-            )
-
-            return
+            return False, "No history found.", []
 
 
-        # A password is required to view an existing profile's history 
-        # so other people can't look up someone else's results just by knowing their name.
-        if password == "":
-
-            messagebox.showwarning(
-                "No Password",
-                "Please enter the password for \"" +
-                username +
-                "\" to view their history."
-            )
-
-            return
+        history = profiles[
+            profile_key
+        ].get(
+            "history",
+            []
+        )
 
 
-        stored_hash = profiles[profile_key].get(
+        if len(history) == 0:
+
+            return False, "No history found.", []
+
+
+        stored_hash = profiles[
+            profile_key
+        ].get(
             "password_hash"
         )
 
-        if stored_hash is not None and stored_hash != self.hash_password(
-            password
-        ):
 
-            messagebox.showwarning(
-                "Incorrect Password",
-                "That password doesn't match the one saved for \"" +
-                username +
-                "\"."
-            )
+        if stored_hash is not None:
 
-            return
+            if stored_hash != self.hash_password(
+                password
+            ):
+
+                return False, "Incorrect password.", []
 
 
-        # Create the pop-up history window.
-        history_window = tk.Toplevel(
-            self.root
-        )
-
-        history_window.title(
-            username + "'s History"
-        )
-
-        history_window.geometry(
-            "450x400"
-        )
-
-        history_window.transient(
-            self.root
-        )
+        return True, "History loaded.", history
 
 
-        # Heading label.
-        heading = tk.Label(
-            history_window,
-            text="Past Results for " + username,
-            font=("Arial", 13, "bold")
-        )
+# investment chart
 
-        heading.pack(
-            pady=10
-        )
+# This class is responsible for creating the matplotlib chart.
+#
+# The chart receives the profile as data and does not calculate
+# the user's risk profile itself.
 
+class InvestmentChart:
 
-        # Create a frame to hold the scrollable text area.
-        text_frame = tk.Frame(
-            history_window
-        )
+    def __init__(self, parent):
 
-        text_frame.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=5
-        )
+        self.parent = parent
+        self.canvas = None
 
 
-        # Add a scrollbar for when there are lots of past attempts.
-        scrollbar = tk.Scrollbar(
-            text_frame
-        )
+    # show allocation chart function
 
-        scrollbar.pack(
-            side="right",
-            fill="y"
-        )
+    def show_allocation_chart(
+        self,
+        profile
+    ):
 
+        # Remove any previous chart.
+        for widget in self.parent.winfo_children():
 
-        # Create the text widget that will list every attempt.
-        history_text = tk.Text(
-            text_frame,
-            wrap="word",
-            yscrollcommand=scrollbar.set,
-            font=("Arial", 10)
-        )
-
-        history_text.pack(
-            side="left",
-            fill="both",
-            expand=True
-        )
-
-        scrollbar.config(
-            command=history_text.yview
-        )
+            widget.destroy()
 
 
-        # Show the most recent attempt first.
-        entries = list(
-            reversed(
-                profiles[profile_key]["history"]
-            )
-        )
+        if profile == "Conservative":
 
-        for entry in entries:
+            labels = [
+                "Savings",
+                "Bonds",
+                "Index Funds"
+            ]
 
-            history_text.insert(
-                "end",
-                "Date: " + entry.get("date", "Unknown") + "\n"
-            )
-
-            history_text.insert(
-                "end",
-                "Age: " + str(entry.get("age", "")) + "\n"
-            )
-
-            history_text.insert(
-                "end",
-                "Income: $" + str(entry.get("income", "")) + "\n"
-            )
-
-            history_text.insert(
-                "end",
-                "Risk Profile: " + entry.get("profile", "") + "\n"
-            )
-
-            history_text.insert(
-                "end",
-                "Score: " + str(entry.get("score", "")) + "\n"
-            )
-
-            history_text.insert(
-                "end",
-                "-" * 40 + "\n\n"
-            )
+            values = [
+                50,
+                35,
+                15
+            ]
 
 
-        # Stop the user from editing the history text.
-        history_text.config(
-            state="disabled"
+        elif profile == "Moderate":
+
+            labels = [
+                "Index Funds",
+                "Bonds",
+                "Savings"
+            ]
+
+            values = [
+                50,
+                30,
+                20
+            ]
+
+
+        else:
+
+            labels = [
+                "Growth ETFs",
+                "Global Index Funds",
+                "Shares"
+            ]
+
+            values = [
+                45,
+                35,
+                20
+            ]
+
+
+        figure = Figure(
+            figsize=(4, 2.2),
+            dpi=100
         )
 
 
-        # Close button.
-        close_button = tk.Button(
-            history_window,
-            text="Close",
-            command=history_window.destroy,
-            font=("Arial", 10)
-        )
-
-        close_button.pack(
-            pady=10
+        axis = figure.add_subplot(
+            111
         )
 
 
-    # save results function
+        axis.pie(
+            values,
+            labels=labels,
+            autopct="%1.0f%%",
+            startangle=90
+        )
 
-    # This function saves the user's details and quiz result
-    # to an external text file.
-    def save_results(self):
 
-        # Build the full path to the results file, in the same
-        # folder as this script.
-        results_path = os.path.join(
+        axis.set_title(
+            "Suggested Investment Allocation"
+        )
+
+
+        self.canvas = FigureCanvasTkAgg(
+            figure,
+            master=self.parent
+        )
+
+
+        self.canvas.draw()
+
+        self.canvas.get_tk_widget().pack()
+
+
+# gui
+
+# This class is responsible for the Tkinter interface.
+#
+# It communicates with QuizEngine and ProfileManager through
+# clearly defined methods.
+#
+# The quiz logic and profile storage are therefore separate
+# from the GUI.
+
+class InvestmentQuizGUI:
+
+    def __init__(
+        self,
+        root,
+        quiz_engine,
+        profile_manager
+    ):
+
+        # Store the GUI window.
+        self.root = root
+
+        # Store the quiz engine interface.
+        self.quiz_engine = quiz_engine
+
+        # Store the profile manager interface.
+        self.profile_manager = profile_manager
+
+
+        # music settings
+
+        self.music_available = pygame_installed
+        self.music_playing = False
+
+
+        # Find the program folder.
+
+        self.folder = os.path.dirname(
+            os.path.abspath(__file__)
+        )
+
+
+        # Create file paths.
+
+        self.music_path = os.path.join(
             self.folder,
-            "investment_results.txt"
+            AppConstants.MUSIC_FILENAME
+        )
+
+        self.results_path = os.path.join(
+            self.folder,
+            AppConstants.RESULTS_FILENAME
         )
 
 
-        try:
+        self.root.title(
+            "Investment Recommendation Quiz"
+        )
 
-            # Open the results text file in append mode.
-            # "a" means new results are added without deleting old results.
-            with open(
-                results_path,
-                "a"
-            ) as file:
-
-                # Save the user's details.
-                file.write(
-                    "Investment Quiz Result\n"
-                )
-
-                file.write(
-                    "Name: " +
-                    self.user_name +
-                    "\n"
-                )
-
-                file.write(
-                    "Age: " +
-                    str(self.user_age) +
-                    "\n"
-                )
-
-                file.write(
-                    "Income: $" +
-                    str(self.user_income) +
-                    "\n"
-                )
-
-
-                # Save the user's risk profile.
-                if self.score <= 7:
-
-                    profile = "Conservative"
-
-                elif self.score <= 11:
-
-                    profile = "Moderate"
-
-                else:
-
-                    profile = "Growth"
-
-
-                file.write(
-                    "Result: " +
-                    profile +
-                    "\n"
-                )
-
-
-                # Add the user's score.
-                file.write(
-                    "Score: " +
-                    str(self.score) +
-                    "\n"
-                )
-
-
-                # Add a separator between different users.
-                file.write(
-                    "------------------------------\n"
-                )
-
-
-        except OSError as error:
-
-            # If the file could not be written tell the user.
-            messagebox.showerror(
-                "Save Failed",
-                "Your results could not be saved.\n\n" +
-                str(error)
+        self.root.geometry(
+            str(
+                AppConstants.WINDOW_WIDTH
             )
-
-            return
-
-
-        # Also save this attempt into the user's JSON profile
-        # history, so it can be looked up later with the
-        # View My History button.
-        self.save_profile_entry()
-
-
-        # Tell the user that their results have been saved.
-        messagebox.showinfo(
-            "Results Saved",
-            "Your results have been saved successfully to:\n" +
-            results_path
+            + "x"
+            + str(
+                AppConstants.WINDOW_HEIGHT
+            )
         )
 
 
-    # restart quiz function
+        # images
 
-    # This function resets the quiz so the user can take it again.
-    def restart_quiz(self):
-
-        # Reset the score.
-        self.score = 0
-
-        # Reset the question number.
-        self.current_question = 0
-
-        # Clear the saved answers.
-        self.answer_history = []
-
-        # Reset user details.
-        self.user_name = ""
-        self.user_age = 0
-        self.user_income = 0
-
-        # Reset selected answer.
-        self.choice.set(-1)
+        self.investment_image = None
+        self.question_image = None
+        self.results_image = None
+        self.background_image = None
 
 
-        # Hide results image.
-        self.results_image_label.pack_forget()
+        # background paths
 
-        # Hide results buttons.
-        self.results_button_frame.pack_forget()
-
-        # Hide the chart.
-        self.chart_frame.pack_forget()
-
-        # Hide question image.
-        self.question_image_label.pack_forget()
-
-        # Hide question text.
-        self.question_label.pack_forget()
-
-        # Hide progress label.
-        self.progress_label.pack_forget()
-
-        # Hide progress bar.
-        self.progress_bar.pack_forget()
-
-        # Hide quiz buttons.
-        self.button_frame.pack_forget()
+        self.background_paths = [
+            os.path.join(
+                self.folder,
+                filename
+            )
+            for filename in AppConstants.BACKGROUND_FILENAMES
+        ]
 
 
-        # Hide radio buttons.
-        for button in self.buttons:
-
-            button.pack_forget()
+        self.current_background_index = 0
 
 
-        # Clear disclaimer.
-        self.disclaimer.config(
-            text=""
-        )
+        # load background
 
-        # Hide the disclaimer again so it doesn't show as an
-        # empty grey box on the start screen.
-        self.disclaimer.pack_forget()
+        background_path = self.background_paths[
+            self.current_background_index
+        ]
 
 
-        # Change title back.
-        self.title.config(
-            text="Investment Recommendation Quiz"
+        self.background_image = tk.PhotoImage(
+            file=background_path
         )
 
 
-        # Show welcome image again.
+        self.background_label = tk.Label(
+            self.root,
+            image=self.background_image
+        )
+
+
+        self.background_label.place(
+            x=0,
+            y=0,
+            relwidth=1,
+            relheight=1
+        )
+
+
+        self.background_label.lower()
+
+
+        # title
+
+        self.title = tk.Label(
+            self.root,
+            text="Investment Recommendation Quiz",
+            font=("Arial", 20)
+        )
+
+
+        self.title.pack(
+            pady=20
+        )
+
+
+        # welcome image
+
+        image_path = os.path.join(
+            self.folder,
+            AppConstants.WELCOME_IMAGE
+        )
+
+
+        self.investment_image = tk.PhotoImage(
+            file=image_path
+        )
+
+
+        self.investment_image = self.investment_image.subsample(
+            3,
+            3
+        )
+
+
+        self.image_label = tk.Label(
+            self.root,
+            image=self.investment_image
+        )
+
+
         self.image_label.pack(
             pady=5
         )
 
 
-        # Show user detail inputs.
+        # results image
+
+        self.results_image_path = os.path.join(
+            self.folder,
+            AppConstants.RESULTS_IMAGE
+        )
+
+
+        self.results_image_label = tk.Label(
+            self.root
+        )
+
+
+        # user details
+
+        self.name_label = tk.Label(
+            self.root,
+            text="Enter your name:",
+            font=("Arial", 12)
+        )
+
         self.name_label.pack()
 
-        self.name_entry.delete(
-            0,
-            tk.END
+
+        self.name_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12)
         )
 
         self.name_entry.pack(
@@ -2278,11 +969,18 @@ class InvestmentQuiz:
         )
 
 
+        self.age_label = tk.Label(
+            self.root,
+            text="Enter your age:",
+            font=("Arial", 12)
+        )
+
         self.age_label.pack()
 
-        self.age_entry.delete(
-            0,
-            tk.END
+
+        self.age_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12)
         )
 
         self.age_entry.pack(
@@ -2290,11 +988,18 @@ class InvestmentQuiz:
         )
 
 
+        self.income_label = tk.Label(
+            self.root,
+            text="Enter your annual income:",
+            font=("Arial", 12)
+        )
+
         self.income_label.pack()
 
-        self.income_entry.delete(
-            0,
-            tk.END
+
+        self.income_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12)
         )
 
         self.income_entry.pack(
@@ -2302,11 +1007,19 @@ class InvestmentQuiz:
         )
 
 
+        self.password_label = tk.Label(
+            self.root,
+            text="Enter a password (used to protect your results):",
+            font=("Arial", 12)
+        )
+
         self.password_label.pack()
 
-        self.password_entry.delete(
-            0,
-            tk.END
+
+        self.password_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12),
+            show="*"
         )
 
         self.password_entry.pack(
@@ -2314,202 +1027,715 @@ class InvestmentQuiz:
         )
 
 
-        # Show start button.
+        # question images
+
+        self.question_image_paths = [
+            os.path.join(
+                self.folder,
+                filename
+            )
+            for filename in AppConstants.QUESTION_IMAGE_FILENAMES
+        ]
+
+
+        self.question_image_label = tk.Label(
+            self.root
+        )
+
+
+        # question label
+
+        self.question_label = tk.Label(
+            self.root,
+            text="",
+            font=("Arial", 15),
+            wraplength=500
+        )
+
+
+        self.progress_label = tk.Label(
+            self.root,
+            text="",
+            font=("Arial", 12)
+        )
+
+
+        # progress bar
+
+        self.progress_bar = tk.Canvas(
+            self.root,
+            width=AppConstants.PROGRESS_BAR_WIDTH,
+            height=AppConstants.PROGRESS_BAR_HEIGHT,
+            bg="white",
+            highlightthickness=1
+        )
+
+
+        self.progress_bar_text = self.progress_bar.create_text(
+            AppConstants.PROGRESS_BAR_WIDTH // 2,
+            AppConstants.PROGRESS_BAR_HEIGHT // 2,
+            text="0%",
+            font=("Arial", 10)
+        )
+
+
+        # answer variable
+
+        self.choice = tk.IntVar(
+            value=-1
+        )
+
+
+        # radio buttons
+
+        self.buttons = []
+
+
+        for index in range(
+            AppConstants.OPTION_COUNT
+        ):
+
+            button = tk.Radiobutton(
+                self.root,
+                text="",
+                variable=self.choice,
+                value=index,
+                font=("Arial", 12)
+            )
+
+            self.buttons.append(
+                button
+            )
+
+
+        # navigation buttons
+
+        self.button_frame = tk.Frame(
+            self.root
+        )
+
+
+        self.next_button = tk.Button(
+            self.button_frame,
+            text="Next",
+            command=self.next_question,
+            font=("Arial", 12)
+        )
+
+
+        self.back_button = tk.Button(
+            self.button_frame,
+            text="Back",
+            command=self.back_question,
+            font=("Arial", 12)
+        )
+
+
+        # results buttons
+
+        self.results_button_frame = tk.Frame(
+            self.root
+        )
+
+
+        self.save_button = tk.Button(
+            self.results_button_frame,
+            text="Save Results",
+            command=self.save_results,
+            font=("Arial", 12)
+        )
+
+
+        self.restart_button = tk.Button(
+            self.results_button_frame,
+            text="Restart Quiz",
+            command=self.restart_quiz,
+            font=("Arial", 12)
+        )
+
+
+        # chart
+
+        self.chart_frame = tk.Frame(
+            self.root
+        )
+
+
+        self.chart = InvestmentChart(
+            self.chart_frame
+        )
+
+
+        # disclaimer
+
+        self.disclaimer = tk.Label(
+            self.root,
+            text="",
+            font=("Arial", 8)
+        )
+
+
+        # start button
+
+        self.start_button = tk.Button(
+            self.root,
+            text="Start Questions",
+            command=self.get_user_details,
+            font=("Arial", 12)
+        )
+
+
         self.start_button.pack(
             pady=15
         )
 
-        # Show the view history button again.
+
+        # history button
+
+        self.view_history_button = tk.Button(
+            self.root,
+            text="View My History",
+            command=self.view_history,
+            font=("Arial", 11)
+        )
+
+
         self.view_history_button.pack(
+            pady=5
+        )
+
+
+        # music button
+
+        self.music_button = tk.Button(
+            self.root,
+            text="Music: Off",
+            command=self.toggle_music,
+            font=("Arial", 11)
+        )
+
+
+        self.music_button.pack(
+            side="bottom",
+            pady=10
+        )
+
+
+        # background button
+
+        self.background_button = tk.Button(
+            self.root,
+            text="Change Background",
+            command=self.open_background_picker,
+            font=("Arial", 11)
+        )
+
+
+        self.background_button.pack(
+            side="bottom",
+            pady=10
+        )
+
+
+    # user details function
+
+    # Gets information from the GUI, validates it and then
+    # passes the valid information to the QuizEngine.
+
+    def get_user_details(self):
+
+        name = self.name_entry.get().strip()
+        age_text = self.age_entry.get().strip()
+        income_text = self.income_entry.get().strip()
+        password = self.password_entry.get().strip()
+
+
+        if name == "":
+
+            messagebox.showwarning(
+                "No Name",
+                "Please enter your name."
+            )
+
+            return
+
+
+        if age_text == "":
+
+            messagebox.showwarning(
+                "No Age",
+                "Please enter your age."
+            )
+
+            return
+
+
+        try:
+
+            age = int(
+                age_text
+            )
+
+        except ValueError:
+
+            messagebox.showwarning(
+                "Invalid Age",
+                "Please enter your age as a number."
+            )
+
+            return
+
+
+        if age < AppConstants.MIN_AGE or age > AppConstants.MAX_AGE:
+
+            messagebox.showwarning(
+                "Invalid Age",
+                "This quiz is designed for users aged "
+                + str(AppConstants.MIN_AGE)
+                + "-"
+                + str(AppConstants.MAX_AGE)
+                + "."
+            )
+
+            return
+
+
+        if income_text == "":
+
+            messagebox.showwarning(
+                "No Income",
+                "Please enter your annual income."
+            )
+
+            return
+
+
+        try:
+
+            income = float(
+                income_text
+            )
+
+        except ValueError:
+
+            messagebox.showwarning(
+                "Invalid Income",
+                "Please enter your income as a number."
+            )
+
+            return
+
+
+        if income < 0:
+
+            messagebox.showwarning(
+                "Invalid Income",
+                "Income cannot be negative."
+            )
+
+            return
+
+
+        if password == "":
+
+            messagebox.showwarning(
+                "No Password",
+                "Please enter a password."
+            )
+
+            return
+
+
+        if len(password) < AppConstants.MIN_PASSWORD_LENGTH:
+
+            messagebox.showwarning(
+                "Password Too Short",
+                "Your password must be at least "
+                + str(AppConstants.MIN_PASSWORD_LENGTH)
+                + " characters long."
+            )
+
+            return
+
+
+        # Communicate with the profile manager.
+
+        login_successful, login_message = (
+            self.profile_manager.check_login(
+                name,
+                password
+            )
+        )
+
+
+        if not login_successful:
+
+            messagebox.showwarning(
+                "Login Failed",
+                login_message
+            )
+
+            return
+
+
+        # Pass user information to the quiz engine.
+
+        self.quiz_engine.set_user_details(
+            name,
+            age,
+            income
+        )
+
+
+        self.hide_user_details()
+
+        self.title.config(
+            text="Welcome " + name + "!"
+        )
+
+        self.load_question()
+
+
+    # hide user details function
+
+    def hide_user_details(self):
+
+        self.name_label.pack_forget()
+        self.name_entry.pack_forget()
+
+        self.age_label.pack_forget()
+        self.age_entry.pack_forget()
+
+        self.income_label.pack_forget()
+        self.income_entry.pack_forget()
+
+        self.password_label.pack_forget()
+        self.password_entry.pack_forget()
+
+        self.start_button.pack_forget()
+        self.view_history_button.pack_forget()
+        self.image_label.pack_forget()
+
+
+    # load question function
+
+    # Gets question data from QuizEngine and displays it.
+
+    def load_question(self):
+
+        self.choice.set(-1)
+
+        question = self.quiz_engine.get_current_question()
+
+
+        # load question image
+
+        question_number = (
+            self.quiz_engine.get_current_question_number()
+        )
+
+
+        self.question_image = tk.PhotoImage(
+            file=self.question_image_paths[
+                question_number - 1
+            ]
+        )
+
+
+        self.question_image = self.question_image.subsample(
+            2,
+            2
+        )
+
+
+        self.question_image_label.config(
+            image=self.question_image
+        )
+
+
+        self.question_image_label.pack(
+            pady=5
+        )
+
+
+        # progress
+
+        self.progress_label.config(
+            text="Question "
+            + str(question_number)
+            + " of "
+            + str(
+                self.quiz_engine.get_question_count()
+            )
+        )
+
+
+        self.progress_label.pack(
+            pady=5
+        )
+
+
+        self.update_progress_bar()
+
+
+        # question
+
+        self.question_label.config(
+            text=question.question,
+            font=("Arial", 15)
+        )
+
+
+        self.question_label.pack(
+            pady=15
+        )
+
+
+        # answers
+
+        for index in range(
+            len(question.options)
+        ):
+
+            self.buttons[index].config(
+                text=question.options[index]
+            )
+
+            self.buttons[index].pack(
+                anchor="w",
+                padx=150
+            )
+
+
+        # navigation
+
+        self.button_frame.pack(
+            pady=20
+        )
+
+
+        if question_number > 1:
+
+            self.back_button.pack(
+                side="left",
+                padx=10
+            )
+
+        else:
+
+            self.back_button.pack_forget()
+
+
+        self.next_button.pack(
+            side="left",
+            padx=10
+        )
+
+
+    # next question function
+
+    # Gets the selected answer from the GUI and passes it
+    # to QuizEngine.
+
+    def next_question(self):
+
+        selected_answer = self.choice.get()
+
+
+        if selected_answer == -1:
+
+            messagebox.showwarning(
+                "No Answer",
+                "Please select an answer."
+            )
+
+            return
+
+
+        answer_accepted = (
+            self.quiz_engine.answer_question(
+                selected_answer
+            )
+        )
+
+
+        if not answer_accepted:
+
+            messagebox.showwarning(
+                "Invalid Answer",
+                "Please select a valid answer."
+            )
+
+            return
+
+
+        if self.quiz_engine.quiz_finished():
+
+            self.show_results()
+
+        else:
+
+            self.load_question()
+
+
+    # back question function
+
+    # Asks QuizEngine to move backwards.
+
+    def back_question(self):
+
+        if self.quiz_engine.go_back():
+
+            self.load_question()
+
+
+    # update progress bar function
+
+    def update_progress_bar(self):
+
+        self.progress_bar.delete(
+            "bar"
+        )
+
+
+        percentage = int(
+            (
+                self.quiz_engine.get_current_question_number()
+                /
+                self.quiz_engine.get_question_count()
+            )
+            * 100
+        )
+
+
+        bar_width = int(
+            AppConstants.PROGRESS_BAR_WIDTH
+            * percentage
+            / 100
+        )
+
+
+        self.progress_bar.create_rectangle(
+            0,
+            0,
+            bar_width,
+            AppConstants.PROGRESS_BAR_HEIGHT,
+            fill="green",
+            tags="bar"
+        )
+
+
+        self.progress_bar.itemconfig(
+            self.progress_bar_text,
+            text=str(percentage) + "%"
+        )
+
+
+        self.progress_bar.tag_raise(
+            self.progress_bar_text
+        )
+
+
+        self.progress_bar.pack(
             pady=5
         )
 
 
     # results function
 
-    # This function decides the user's risk profile.
+    # Gets the completed result from QuizEngine and displays it.
+
     def show_results(self):
 
-        # If the score is 7 or lower,
-        # the user is considered conservative.
-        if self.score <= 7:
-
-            result = (
-                "Risk Profile: Conservative\n"
-                "You prefer lower levels of risk.\n\n"
-                "Suggested investments:\n"
-                "- Savings accounts\n"
-                "- Term deposits\n"
-                "- Bonds"
-            )
-
-            profile = "Conservative"
-
-
-        # If the score is between 8 and 11,
-        # the user is considered moderate.
-        elif self.score <= 11:
-
-            result = (
-                "Risk Profile: Moderate\n"
-                "You are comfortable with some risk.\n\n"
-                "Suggested investments:\n"
-                "- Index funds\n"
-                "- Balanced funds\n"
-                "- Bonds"
-            )
-
-            profile = "Moderate"
-
-
-        # If the score is higher than 11,
-        # the user is considered a growth investor.
-        else:
-
-            result = (
-                "Risk Profile: Growth\n"
-                "You are comfortable with higher risk.\n\n"
-                "Suggested investments:\n"
-                "- Growth ETFs\n"
-                "- Shares\n"
-                "- Global index funds"
-            )
-
-            profile = "Growth"
-
-
-        # Give an additional suggestion based on the user's income.
-        if self.user_income < 30000:
-
-            income_suggestion = (
-                "\n\nIncome Suggestion:\n"
-                "Consider building your savings before making "
-                "larger investments."
-            )
-
-        elif self.user_income <= 70000:
-
-            income_suggestion = (
-                "\n\nIncome Suggestion:\n"
-                "Consider starting with smaller, diversified "
-                "investments."
-            )
-
-        else:
-
-            income_suggestion = (
-                "\n\nIncome Suggestion:\n"
-                "You may have more flexibility to consider a "
-                "wider range of investments."
-            )
-
-
-        # Create a smaller results font.
-        results_font = (
-            "Arial",
-            10
+        result = (
+            self.quiz_engine.get_complete_result()
         )
 
 
-        # Replace the question with the results.
+        profile = (
+            self.quiz_engine.get_profile()
+        )
+
+
         self.question_label.config(
-            text="Results for " +
-            self.user_name +
-            "\n\n" +
-            result +
-            income_suggestion,
-            font=results_font
+            text="Results for "
+            + self.quiz_engine.user_name
+            + "\n\n"
+            + result,
+            font=("Arial", 10)
         )
 
-        # Display the results with less spacing.
+
         self.question_label.pack(
             pady=2
         )
 
-        # Fade the results text in for a smoother reveal.
-        self.fade_in_label(
-            self.question_label
-        )
 
+        # hide quiz controls
 
-        # Hide the radio buttons because
-        # the quiz has finished.
         for button in self.buttons:
 
             button.pack_forget()
 
 
-        # Hide the Next button.
         self.next_button.pack_forget()
-
-        # Hide the Back button.
         self.back_button.pack_forget()
-
-        # Hide the button frame itself (fixes the empty gray box)
         self.button_frame.pack_forget()
-
-        # Hide question progress.
         self.progress_label.pack_forget()
-
-        # Hide the progress bar.
         self.progress_bar.pack_forget()
+        self.question_image_label.pack_forget()
 
 
-        # Display the disclaimer.
+        # disclaimer
+
         self.disclaimer.config(
-            text="For educational purposes only. Not financial advice.",
-            font=("Arial", 8)
+            text="For educational purposes only. Not financial advice."
         )
 
-        # Show the disclaimer now that it has text - it stays
-        # hidden the rest of the time so it doesn't appear as an
-        # empty grey box on the start screen.
+
         self.disclaimer.pack(
             side="bottom",
             pady=5
         )
 
 
-        # Hide the question image.
-        self.question_image_label.pack_forget()
+        # results image
 
-
-        # Load the results image.
         self.results_image = tk.PhotoImage(
             file=self.results_image_path
         )
 
 
-        # Make the results image much smaller.
         self.results_image = self.results_image.subsample(
             3,
             3
         )
 
 
-        # Display the results image.
         self.results_image_label.config(
             image=self.results_image
         )
 
 
-        # Put the results image on the screen with less space.
         self.results_image_label.pack(
             pady=0
         )
 
 
-        # Display the allocation chart.
+        # chart
+
         self.chart_frame.pack(
             pady=0
         )
+
 
         self.chart.show_allocation_chart(
             profile
         )
 
 
-        # Show the Save Results and Restart Quiz buttons.
+        # buttons
+
         self.results_button_frame.pack(
             pady=3
         )
@@ -2527,20 +1753,814 @@ class InvestmentQuiz:
         )
 
 
-# Create the main window.
-root = tk.Tk()
+    # save results function
 
-# Create the investment quiz.
-quiz = InvestmentQuiz(root)
+    # Saves the result to a text file and then asks the
+    # ProfileManager to store the attempt in JSON.
 
-# Create the investment allocation chart.
-quiz.create_chart()
+    def save_results(self):
 
-# make sure music stops when the user closes the program
-root.protocol(
-    "WM_DELETE_WINDOW",
-    quiz.close_program
-)
+        profile = (
+            self.quiz_engine.get_profile()
+        )
 
-# Start the program.
-root.mainloop()
+
+        try:
+
+            with open(
+                self.results_path,
+                "a"
+            ) as file:
+
+                file.write(
+                    "Investment Quiz Result\n"
+                )
+
+                file.write(
+                    "Name: "
+                    + self.quiz_engine.user_name
+                    + "\n"
+                )
+
+                file.write(
+                    "Age: "
+                    + str(
+                        self.quiz_engine.user_age
+                    )
+                    + "\n"
+                )
+
+                file.write(
+                    "Income: $"
+                    + str(
+                        self.quiz_engine.user_income
+                    )
+                    + "\n"
+                )
+
+                file.write(
+                    "Result: "
+                    + profile
+                    + "\n"
+                )
+
+                file.write(
+                    "Score: "
+                    + str(
+                        self.quiz_engine.score
+                    )
+                    + "\n"
+                )
+
+                file.write(
+                    "------------------------------\n"
+                )
+
+
+        except OSError as error:
+
+            messagebox.showerror(
+                "Save Failed",
+                "Your results could not be saved.\n\n"
+                + str(error)
+            )
+
+            return
+
+
+        # Pass the completed quiz information to ProfileManager.
+
+        saved = (
+            self.profile_manager.save_quiz_attempt(
+                self.quiz_engine.user_name,
+                self.quiz_engine.user_age,
+                self.quiz_engine.user_income,
+                self.quiz_engine.score,
+                profile
+            )
+        )
+
+
+        if not saved:
+
+            messagebox.showerror(
+                "Save Failed",
+                "Your JSON profile history could not be saved."
+            )
+
+            return
+
+
+        messagebox.showinfo(
+            "Results Saved",
+            "Your results have been saved successfully."
+        )
+
+
+    # view history function
+
+    # Gets the username and password from the GUI and asks
+    # ProfileManager for the user's history.
+
+    def view_history(self):
+
+        username = self.name_entry.get().strip()
+        password = self.password_entry.get().strip()
+
+
+        if username == "":
+
+            messagebox.showwarning(
+                "No Name",
+                "Please enter your name first."
+            )
+
+            return
+
+
+        if password == "":
+
+            messagebox.showwarning(
+                "No Password",
+                "Please enter your password first."
+            )
+
+            return
+
+
+        success, message, history = (
+            self.profile_manager.get_history(
+                username,
+                password
+            )
+        )
+
+
+        if not success:
+
+            messagebox.showwarning(
+                "History",
+                message
+            )
+
+            return
+
+
+        # history window
+
+        history_window = tk.Toplevel(
+            self.root
+        )
+
+
+        history_window.title(
+            username + "'s History"
+        )
+
+
+        history_window.geometry(
+            "450x400"
+        )
+
+
+        history_window.transient(
+            self.root
+        )
+
+
+        heading = tk.Label(
+            history_window,
+            text="Past Results for " + username,
+            font=("Arial", 13, "bold")
+        )
+
+
+        heading.pack(
+            pady=10
+        )
+
+
+        text_frame = tk.Frame(
+            history_window
+        )
+
+
+        text_frame.pack(
+            fill="both",
+            expand=True,
+            padx=10,
+            pady=5
+        )
+
+
+        scrollbar = tk.Scrollbar(
+            text_frame
+        )
+
+
+        scrollbar.pack(
+            side="right",
+            fill="y"
+        )
+
+
+        history_text = tk.Text(
+            text_frame,
+            wrap="word",
+            yscrollcommand=scrollbar.set,
+            font=("Arial", 10)
+        )
+
+
+        history_text.pack(
+            side="left",
+            fill="both",
+            expand=True
+        )
+
+
+        scrollbar.config(
+            command=history_text.yview
+        )
+
+
+        # Display newest result first.
+
+        entries = list(
+            reversed(
+                history
+            )
+        )
+
+
+        for entry in entries:
+
+            history_text.insert(
+                "end",
+                "Date: "
+                + entry.get(
+                    "date",
+                    "Unknown"
+                )
+                + "\n"
+            )
+
+
+            history_text.insert(
+                "end",
+                "Age: "
+                + str(
+                    entry.get(
+                        "age",
+                        ""
+                    )
+                )
+                + "\n"
+            )
+
+
+            history_text.insert(
+                "end",
+                "Income: $"
+                + str(
+                    entry.get(
+                        "income",
+                        ""
+                    )
+                )
+                + "\n"
+            )
+
+
+            history_text.insert(
+                "end",
+                "Risk Profile: "
+                + entry.get(
+                    "profile",
+                    ""
+                )
+                + "\n"
+            )
+
+
+            history_text.insert(
+                "end",
+                "Score: "
+                + str(
+                    entry.get(
+                        "score",
+                        ""
+                    )
+                )
+                + "\n"
+            )
+
+
+            history_text.insert(
+                "end",
+                "-" * 40
+                + "\n\n"
+            )
+
+
+        history_text.config(
+            state="disabled"
+        )
+
+
+        close_button = tk.Button(
+            history_window,
+            text="Close",
+            command=history_window.destroy,
+            font=("Arial", 10)
+        )
+
+
+        close_button.pack(
+            pady=10
+        )
+
+
+    # restart quiz function
+
+    # Resets the underlying quiz engine and then resets the GUI.
+
+    def restart_quiz(self):
+
+        self.quiz_engine.reset()
+
+        self.results_image_label.pack_forget()
+        self.results_button_frame.pack_forget()
+        self.chart_frame.pack_forget()
+        self.question_image_label.pack_forget()
+        self.question_label.pack_forget()
+        self.progress_label.pack_forget()
+        self.progress_bar.pack_forget()
+        self.button_frame.pack_forget()
+        self.disclaimer.pack_forget()
+
+
+        for button in self.buttons:
+
+            button.pack_forget()
+
+
+        self.title.config(
+            text="Investment Recommendation Quiz"
+        )
+
+
+        self.image_label.pack(
+            pady=5
+        )
+
+
+        self.name_label.pack()
+        self.name_entry.delete(
+            0,
+            tk.END
+        )
+        self.name_entry.pack(
+            pady=5
+        )
+
+
+        self.age_label.pack()
+        self.age_entry.delete(
+            0,
+            tk.END
+        )
+        self.age_entry.pack(
+            pady=5
+        )
+
+
+        self.income_label.pack()
+        self.income_entry.delete(
+            0,
+            tk.END
+        )
+        self.income_entry.pack(
+            pady=5
+        )
+
+
+        self.password_label.pack()
+        self.password_entry.delete(
+            0,
+            tk.END
+        )
+        self.password_entry.pack(
+            pady=5
+        )
+
+
+        self.start_button.pack(
+            pady=15
+        )
+
+
+        self.view_history_button.pack(
+            pady=5
+        )
+
+
+    # music functions
+
+    def start_music(self):
+
+        if not self.music_available:
+
+            messagebox.showinfo(
+                "Music Not Available",
+                "Background music is currently unavailable because "
+                "pygame is not installed.\n\n"
+                "To install pygame:\n\n"
+                "1. Open Command Prompt or Terminal.\n"
+                "2. Type:\n\n"
+                "pip install pygame\n\n"
+                "3. Press Enter.\n"
+                "4. Restart this program."
+            )
+
+            return
+
+
+        try:
+
+            if not os.path.exists(
+                self.music_path
+            ):
+
+                messagebox.showwarning(
+                    "Music File Not Found",
+                    "Could not find music.mp3.\n\n"
+                    "Put music.mp3 in the same folder as "
+                    "your Python program."
+                )
+
+                return
+
+
+            if not self.music_playing:
+
+                pygame.mixer.init()
+
+                pygame.mixer.music.load(
+                    self.music_path
+                )
+
+                pygame.mixer.music.play(
+                    -1
+                )
+
+                self.music_playing = True
+
+                self.music_button.config(
+                    text="Music: On"
+                )
+
+
+        except Exception as error:
+
+            messagebox.showwarning(
+                "Music Error",
+                "The music could not be played.\n\n"
+                + str(error)
+            )
+
+
+    def stop_music(self):
+
+        if self.music_available:
+
+            if self.music_playing:
+
+                try:
+
+                    pygame.mixer.music.stop()
+
+                    self.music_playing = False
+
+                    self.music_button.config(
+                        text="Music: Off"
+                    )
+
+                except Exception:
+
+                    pass
+
+
+    def toggle_music(self):
+
+        if self.music_playing:
+
+            self.stop_music()
+
+        else:
+
+            self.start_music()
+
+
+    # background picker
+
+    def open_background_picker(self):
+
+        picker_window = tk.Toplevel(
+            self.root
+        )
+
+
+        picker_window.title(
+            "Choose a Background"
+        )
+
+
+        picker_window.geometry(
+            "300x600"
+        )
+
+
+        picker_window.resizable(
+            False,
+            False
+        )
+
+
+        picker_window.transient(
+            self.root
+        )
+
+
+        heading = tk.Label(
+            picker_window,
+            text="Select a background image:",
+            font=("Arial", 13)
+        )
+
+
+        heading.pack(
+            pady=10
+        )
+
+
+        self.background_previews = []
+
+
+        for index, path in enumerate(
+            self.background_paths
+        ):
+
+            if not os.path.exists(
+                path
+            ):
+
+                missing_label = tk.Label(
+                    picker_window,
+                    text=AppConstants.BACKGROUND_FILENAMES[
+                        index
+                    ]
+                    + " not found",
+                    font=("Arial", 10)
+                )
+
+
+                missing_label.pack(
+                    pady=5
+                )
+
+                continue
+
+
+            preview_image = tk.PhotoImage(
+                file=path
+            )
+
+
+            preview_image = preview_image.subsample(
+                10,
+                10
+            )
+
+
+            self.background_previews.append(
+                preview_image
+            )
+
+
+            preview_button = tk.Button(
+                picker_window,
+                image=preview_image,
+                text=AppConstants.BACKGROUND_FILENAMES[
+                    index
+                ],
+                compound="top",
+                font=("Arial", 9),
+                command=lambda index=index:
+                self.change_background(
+                    index,
+                    picker_window
+                )
+            )
+
+
+            preview_button.pack(
+                pady=8
+            )
+
+
+        close_button = tk.Button(
+            picker_window,
+            text="Close",
+            command=picker_window.destroy,
+            font=("Arial", 10)
+        )
+
+
+        close_button.pack(
+            pady=10
+        )
+
+
+    # change background
+
+    def change_background(
+        self,
+        index,
+        picker_window
+    ):
+
+        chosen_path = self.background_paths[
+            index
+        ]
+
+
+        try:
+
+            self.background_image = tk.PhotoImage(
+                file=chosen_path
+            )
+
+
+            self.background_label.config(
+                image=self.background_image
+            )
+
+
+            self.current_background_index = index
+
+
+        except Exception as error:
+
+            messagebox.showwarning(
+                "Background Error",
+                "That background image could not be loaded.\n\n"
+                + str(error)
+            )
+
+            return
+
+
+        picker_window.destroy()
+
+
+    # close program
+
+    def close_program(self):
+
+        self.stop_music()
+
+        self.root.destroy()
+
+
+# application class
+
+# This class creates the objects required by the program.
+#
+# It connects the GUI to the underlying classes.
+
+class InvestmentQuizApplication:
+
+    def __init__(self):
+
+        # Store all question data inside the application
+        # instead of using a global variable.
+
+        questions = [
+
+            Question(
+                "How long do you want to invest for?",
+                [
+                    "Less than 1 year",
+                    "1-5 years",
+                    "More than 5 years"
+                ],
+                [1, 2, 3]
+            ),
+
+            Question(
+                "If your investment lost 20%, what would you do?",
+                [
+                    "Sell it",
+                    "Wait",
+                    "Buy more"
+                ],
+                [1, 2, 3]
+            ),
+
+            Question(
+                "How much risk are you comfortable with?",
+                [
+                    "Low",
+                    "Medium",
+                    "High"
+                ],
+                [1, 2, 3]
+            ),
+
+            Question(
+                "What is your main investment goal?",
+                [
+                    "Keep my money safe",
+                    "Earn extra money",
+                    "Grow my wealth"
+                ],
+                [1, 2, 3]
+            ),
+
+            Question(
+                "How much investing experience do you have?",
+                [
+                    "None",
+                    "Some",
+                    "A lot"
+                ],
+                [1, 2, 3]
+            )
+        ]
+
+
+        # Create the underlying quiz logic.
+
+        self.quiz_engine = QuizEngine(
+            questions
+        )
+
+
+        # Find the folder containing the program.
+
+        folder = os.path.dirname(
+            os.path.abspath(__file__)
+        )
+
+
+        # Create the profile manager.
+
+        profiles_path = os.path.join(
+            folder,
+            AppConstants.PROFILE_FILENAME
+        )
+
+
+        self.profile_manager = ProfileManager(
+            profiles_path
+        )
+
+
+        # Create the Tkinter window.
+
+        self.root = tk.Tk()
+
+
+        # Create the GUI and pass the underlying objects
+        # into it through the constructor.
+
+        self.gui = InvestmentQuizGUI(
+            self.root,
+            self.quiz_engine,
+            self.profile_manager
+        )
+
+
+        # Make sure music stops when the user closes the program.
+
+        self.root.protocol(
+            "WM_DELETE_WINDOW",
+            self.gui.close_program
+        )
+
+
+    # run function
+
+    def run(self):
+
+        self.root.mainloop()
+
+
+# program entry point
+
+# Create the application and run it.
+
+application = InvestmentQuizApplication()
+
+application.run()
