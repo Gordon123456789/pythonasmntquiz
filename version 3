@@ -7,12 +7,21 @@ import tkinter as tk
 # Import messagebox so we can show warning messages
 from tkinter import messagebox
 
-#helps find image file
+# helps find image file
 import os
 
 # Import matplotlib to create the investment allocation chart
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+# checks if pygame is installed so music can be used
+try:
+    import pygame
+    pygame_installed = True
+
+except ImportError:
+    pygame_installed = False
 
 
 # questions
@@ -142,6 +151,15 @@ class InvestmentQuiz:
         self.user_income = 0
 
 
+        # music settings
+
+        # checks whether background music is available
+        self.music_available = pygame_installed
+
+        # keeps track of whether music is currently playing
+        self.music_playing = False
+
+
         # Store the current images so they are not removed
         # from memory by Tkinter.
         self.investment_image = None
@@ -178,16 +196,26 @@ class InvestmentQuiz:
             os.path.abspath(__file__)
         )
 
+
+        # find the background music file
+        self.music_path = os.path.join(
+            self.folder,
+            "music.mp3"
+        )
+
+
         # Find the image inside the same folder.
         image_path = os.path.join(
             self.folder,
             "image.png"
         )
 
+
         # Load the investment image.
         self.investment_image = tk.PhotoImage(
             file=image_path
         )
+
 
         # Make the image smaller.
         self.investment_image = self.investment_image.subsample(
@@ -195,11 +223,13 @@ class InvestmentQuiz:
             3
         )
 
+
         # Create a label to display the image.
         self.image_label = tk.Label(
             self.root,
             image=self.investment_image
         )
+
 
         # Put the image underneath the title.
         self.image_label.pack(pady=5)
@@ -211,8 +241,10 @@ class InvestmentQuiz:
             "results.png"
         )
 
+
         # Store the results image.
         self.results_image = None
+
 
         # Create a label to display the results image.
         self.results_image_label = tk.Label(
@@ -308,8 +340,10 @@ class InvestmentQuiz:
             )
         ]
 
+
         # Store the current question image.
         self.question_image = None
+
 
         # Create a label to display the question images.
         self.question_image_label = tk.Label(
@@ -327,6 +361,7 @@ class InvestmentQuiz:
             wraplength=500
         )
 
+
         # This label will display which question the user is on.
         self.progress_label = tk.Label(
             self.root,
@@ -343,6 +378,7 @@ class InvestmentQuiz:
             bg="white",
             highlightthickness=1
         )
+
 
         # Create the percentage text inside the progress bar.
         self.progress_bar_text = self.progress_bar.create_text(
@@ -423,6 +459,7 @@ class InvestmentQuiz:
             self.root
         )
 
+
         # Hide the results button frame until the quiz finishes.
         self.results_button_frame.pack_forget()
 
@@ -449,6 +486,7 @@ class InvestmentQuiz:
         self.chart_frame = tk.Frame(
             self.root
         )
+
 
         # Hide the chart until the quiz finishes.
         self.chart_frame.pack_forget()
@@ -486,6 +524,157 @@ class InvestmentQuiz:
         self.start_button.pack(
             pady=15
         )
+
+
+        # music button
+
+        # create a button that allows the user to turn
+        # background music on and off
+        self.music_button = tk.Button(
+            self.root,
+            text="Music: Off",
+            command=self.toggle_music,
+            font=("Arial", 11)
+        )
+
+        self.music_button.pack(
+            pady=5
+        )
+
+
+    # music function
+
+    # this function starts the background music
+    def start_music(self):
+
+        # check if pygame is installed
+        if not self.music_available:
+
+            # tell the user how to install pygame
+            messagebox.showinfo(
+                "Music Not Available",
+                "Background music is currently unavailable because pygame "
+                "is not installed.\n\n"
+                "To install pygame:\n\n"
+                "1. Open Command Prompt or Terminal.\n"
+                "2. Type:\n\n"
+                "pip install pygame\n\n"
+                "3. Press Enter.\n"
+                "4. Restart this program."
+            )
+
+            return
+
+
+        try:
+
+            # check if the music file exists
+            if not os.path.exists(
+                self.music_path
+            ):
+
+                messagebox.showwarning(
+                    "Music File Not Found",
+                    "Could not find music.mp3.\n\n"
+                    "Put music.mp3 in the same folder as "
+                    "your Python program."
+                )
+
+                return
+
+
+            # only initialise pygame if music is not already playing
+            if not self.music_playing:
+
+                # start pygame's music system
+                pygame.mixer.init()
+
+                # load the music file
+                pygame.mixer.music.load(
+                    self.music_path
+                )
+
+                # play the music continuously
+                pygame.mixer.music.play(
+                    -1
+                )
+
+                # record that music is playing
+                self.music_playing = True
+
+                # update the button text
+                self.music_button.config(
+                    text="Music: On"
+                )
+
+
+        except Exception as error:
+
+            # show an error if the music cannot play
+            messagebox.showwarning(
+                "Music Error",
+                "The music could not be played.\n\n" +
+                str(error)
+            )
+
+
+    # stop music function
+
+    # this function stops the background music
+    def stop_music(self):
+
+        # check that pygame is available
+        if self.music_available:
+
+            # only stop music if it is playing
+            if self.music_playing:
+
+                try:
+
+                    # stop the music
+                    pygame.mixer.music.stop()
+
+                    # update the music status
+                    self.music_playing = False
+
+                    # update the button text
+                    self.music_button.config(
+                        text="Music: Off"
+                    )
+
+                except Exception:
+
+                    # prevent errors if pygame has already closed
+                    pass
+
+
+    # toggle music function
+
+    # this function switches the music on and off
+    def toggle_music(self):
+
+        # check whether music is currently playing
+        if self.music_playing:
+
+            # turn the music off
+            self.stop_music()
+
+        else:
+
+            # turn the music on
+            self.start_music()
+
+
+    # close program function
+
+    # this function stops music and closes the program
+    def close_program(self):
+
+        # stop the background music
+        self.stop_music()
+
+        # close the tkinter window
+        self.root.destroy()
 
 
     # user details function
@@ -608,6 +797,7 @@ class InvestmentQuiz:
             self.current_question
         ]
 
+
         # Load the image for the current question.
         self.question_image = tk.PhotoImage(
             file=self.question_image_paths[
@@ -615,11 +805,13 @@ class InvestmentQuiz:
             ]
         )
 
+
         # Make the image smaller.
         self.question_image = self.question_image.subsample(
             2,
             2
         )
+
 
         # Display the current question image.
         self.question_image_label.config(
@@ -629,6 +821,7 @@ class InvestmentQuiz:
         self.question_image_label.pack(
             pady=5
         )
+
 
         # Display the current question number.
         self.progress_label.config(
@@ -642,8 +835,10 @@ class InvestmentQuiz:
             pady=5
         )
 
+
         # Update the visual progress bar.
         self.update_progress_bar()
+
 
         # Change the question label to display
         # the current question.
@@ -655,6 +850,7 @@ class InvestmentQuiz:
         self.question_label.pack(
             pady=15
         )
+
 
         # Change each radio button to display
         # the current question's options.
@@ -669,10 +865,12 @@ class InvestmentQuiz:
                 padx=150
             )
 
+
         # Show the button frame
         self.button_frame.pack(
             pady=20
         )
+
 
         # Show the Back button after the first question.
         if self.current_question > 0:
@@ -685,6 +883,7 @@ class InvestmentQuiz:
         else:
 
             self.back_button.pack_forget()
+
 
         # Show the Next button.
         self.next_button.pack(
@@ -703,6 +902,7 @@ class InvestmentQuiz:
             "bar"
         )
 
+
         # Calculate the percentage completed.
         percentage = int(
             (
@@ -711,10 +911,12 @@ class InvestmentQuiz:
             ) * 100
         )
 
+
         # Calculate how wide the progress bar should be.
         bar_width = int(
             400 * percentage / 100
         )
+
 
         # Draw the completed section of the progress bar.
         self.progress_bar.create_rectangle(
@@ -726,16 +928,19 @@ class InvestmentQuiz:
             tags="bar"
         )
 
+
         # Change the percentage text.
         self.progress_bar.itemconfig(
             self.progress_bar_text,
             text=str(percentage) + "%"
         )
 
+
         # Make sure the percentage appears above the bar.
         self.progress_bar.tag_raise(
             self.progress_bar_text
         )
+
 
         # Display the progress bar.
         self.progress_bar.pack(
@@ -784,6 +989,7 @@ class InvestmentQuiz:
             # Stop the function here.
             return
 
+
         # Add the score from the selected answer
         # to the user's total score.
         #
@@ -796,13 +1002,16 @@ class InvestmentQuiz:
             self.choice.get()
         ]
 
+
         # Save the answer
         self.answer_history.append(
             self.choice.get()
         )
 
+
         # Move to the next question
         self.current_question += 1
+
 
         # Check whether there are still questions left.
         if self.current_question < len(
@@ -898,6 +1107,7 @@ class InvestmentQuiz:
                 111
             )
 
+
             # Add the sections to the pie chart.
             axis.pie(
                 values,
@@ -906,10 +1116,12 @@ class InvestmentQuiz:
                 startangle=90
             )
 
+
             # Add a title to the chart.
             axis.set_title(
                 "Suggested Investment Allocation"
             )
+
 
             # Display the chart inside Tkinter.
             self.canvas = FigureCanvasTkAgg(
@@ -937,18 +1149,12 @@ class InvestmentQuiz:
     def save_results(self):
 
         # Build the full path to the results file, in the same
-        # folder as this script. Using self.folder here (instead
-        # of a bare filename) makes sure the file is always
-        # written to a predictable, fixed location - previously
-        # it used a relative path, so the file was silently
-        # created in whatever folder the program happened to be
-        # launched from, which is why results appeared to "not
-        # save": they were being written somewhere other than
-        # where you were looking for them.
+        # folder as this script.
         results_path = os.path.join(
             self.folder,
             "investment_results.txt"
         )
+
 
         try:
 
@@ -982,6 +1188,7 @@ class InvestmentQuiz:
                     "\n"
                 )
 
+
                 # Save the user's risk profile.
                 if self.score <= 7:
 
@@ -995,11 +1202,13 @@ class InvestmentQuiz:
 
                     profile = "Growth"
 
+
                 file.write(
                     "Result: " +
                     profile +
                     "\n"
                 )
+
 
                 # Add the user's score.
                 file.write(
@@ -1008,16 +1217,16 @@ class InvestmentQuiz:
                     "\n"
                 )
 
+
                 # Add a separator between different users.
                 file.write(
                     "------------------------------\n"
                 )
 
+
         except OSError as error:
 
-            # If the file could not be written (permissions
-            # problem, read-only folder, etc.) tell the user
-            # instead of failing silently.
+            # If the file could not be written tell the user.
             messagebox.showerror(
                 "Save Failed",
                 "Your results could not be saved.\n\n" +
@@ -1026,8 +1235,8 @@ class InvestmentQuiz:
 
             return
 
-        # Tell the user that their results have been saved,
-        # and show them exactly where the file is.
+
+        # Tell the user that their results have been saved.
         messagebox.showinfo(
             "Results Saved",
             "Your results have been saved successfully to:\n" +
@@ -1057,6 +1266,7 @@ class InvestmentQuiz:
         # Reset selected answer.
         self.choice.set(-1)
 
+
         # Hide results image.
         self.results_image_label.pack_forget()
 
@@ -1081,25 +1291,30 @@ class InvestmentQuiz:
         # Hide quiz buttons.
         self.button_frame.pack_forget()
 
+
         # Hide radio buttons.
         for button in self.buttons:
 
             button.pack_forget()
+
 
         # Clear disclaimer.
         self.disclaimer.config(
             text=""
         )
 
+
         # Change title back.
         self.title.config(
             text="Investment Recommendation Quiz"
         )
 
+
         # Show welcome image again.
         self.image_label.pack(
             pady=5
         )
+
 
         # Show user detail inputs.
         self.name_label.pack()
@@ -1113,6 +1328,7 @@ class InvestmentQuiz:
             pady=5
         )
 
+
         self.age_label.pack()
 
         self.age_entry.delete(
@@ -1124,6 +1340,7 @@ class InvestmentQuiz:
             pady=5
         )
 
+
         self.income_label.pack()
 
         self.income_entry.delete(
@@ -1134,6 +1351,7 @@ class InvestmentQuiz:
         self.income_entry.pack(
             pady=5
         )
+
 
         # Show start button.
         self.start_button.pack(
@@ -1237,6 +1455,7 @@ class InvestmentQuiz:
             font=results_font
         )
 
+
         # Display the results with less spacing.
         self.question_label.pack(
             pady=2
@@ -1253,14 +1472,11 @@ class InvestmentQuiz:
         # Hide the Next button.
         self.next_button.pack_forget()
 
-
         # Hide the Back button.
         self.back_button.pack_forget()
 
-
         # Hide question progress.
         self.progress_label.pack_forget()
-
 
         # Hide the progress bar.
         self.progress_bar.pack_forget()
@@ -1338,6 +1554,12 @@ quiz = InvestmentQuiz(root)
 
 # Create the investment allocation chart.
 quiz.create_chart()
+
+# make sure music stops when the user closes the program
+root.protocol(
+    "WM_DELETE_WINDOW",
+    quiz.close_program
+)
 
 # Start the program.
 root.mainloop()
