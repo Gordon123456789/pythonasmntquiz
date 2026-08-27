@@ -63,7 +63,7 @@ class AppConstants:
 
     MUSIC_FILENAME = "music.mp3"
     PROFILE_FILENAME = "profiles.json"
-    RESULTS_FILENAME = "investment_results.txt"
+    RESULTS_FILENAME = "investment_results_version4.txt"
 
     WELCOME_IMAGE = "welcome_image.png"
     RESULTS_IMAGE = "results_image.png"
