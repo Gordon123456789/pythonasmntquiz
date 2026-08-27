@@ -165,6 +165,7 @@ class InvestmentQuiz:
         self.investment_image = None
         self.question_image = None
         self.results_image = None
+        self.background_image = None
 
 
         # Set the title displayed at the top of the window.
@@ -172,9 +173,46 @@ class InvestmentQuiz:
 
 
         # Set the size of the window.
-        #600 = width
-        #600 = height
-        self.root.geometry("600x800")
+        # 600 = width
+        # 740 = height
+        self.root.geometry("600x740")
+
+
+        # Find the folder where the Python file is located.
+        self.folder = os.path.dirname(
+            os.path.abspath(__file__)
+        )
+
+
+        # BACKGROUND IMAGE
+
+        # Find the background image inside the same folder.
+        background_path = os.path.join(
+            self.folder,
+            "background.png"
+        )
+
+        # Load the background image.
+        self.background_image = tk.PhotoImage(
+            file=background_path
+        )
+
+        # Create a label to display the background image.
+        self.background_label = tk.Label(
+            self.root,
+            image=self.background_image
+        )
+
+        # Make the background fill the entire window.
+        self.background_label.place(
+            x=0,
+            y=0,
+            relwidth=1,
+            relheight=1
+        )
+
+        # Put the background behind all other widgets.
+        self.background_label.lower()
 
 
         # title
@@ -189,12 +227,6 @@ class InvestmentQuiz:
 
         # Put the title inside the window.
         self.title.pack(pady=20)
-
-
-        # Find the folder where the Python file is located.
-        self.folder = os.path.dirname(
-            os.path.abspath(__file__)
-        )
 
 
         # find the background music file
@@ -506,8 +538,11 @@ class InvestmentQuiz:
         )
 
 
-        # Put the disclaimer at the bottom.
-        self.disclaimer.pack()
+        # put the disclaimer near the bottom of the window
+        self.disclaimer.pack(
+            side="bottom",
+            pady=5
+        )
 
 
         # Start button
@@ -537,8 +572,10 @@ class InvestmentQuiz:
             font=("Arial", 11)
         )
 
+        # keep the music button visible at the bottom of every screen
         self.music_button.pack(
-            pady=5
+            side="bottom",
+            pady=10
         )
 
 
@@ -670,7 +707,7 @@ class InvestmentQuiz:
     # this function stops music and closes the program
     def close_program(self):
 
-        # stop the background music
+        # stop music
         self.stop_music()
 
         # close the tkinter window
@@ -1103,6 +1140,7 @@ class InvestmentQuiz:
                 dpi=100
             )
 
+
             axis = figure.add_subplot(
                 111
             )
@@ -1455,7 +1493,6 @@ class InvestmentQuiz:
             font=results_font
         )
 
-
         # Display the results with less spacing.
         self.question_label.pack(
             pady=2
@@ -1474,6 +1511,9 @@ class InvestmentQuiz:
 
         # Hide the Back button.
         self.back_button.pack_forget()
+
+        # Hide the button frame itself (fixes the empty gray box)
+        self.button_frame.pack_forget()
 
         # Hide question progress.
         self.progress_label.pack_forget()
