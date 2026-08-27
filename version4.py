@@ -65,22 +65,22 @@ class AppConstants:
     PROFILE_FILENAME = "profiles.json"
     RESULTS_FILENAME = "investment_results.txt"
 
-    WELCOME_IMAGE = "image.png"
-    RESULTS_IMAGE = "results.png"
+    WELCOME_IMAGE = "welcome_image.png"
+    RESULTS_IMAGE = "results_image.png"
 
     BACKGROUND_FILENAMES = [
-        "background.png",
-        "background2.png",
-        "background3.png",
-        "background4.png"
+        "background_image.png",
+        "background2_image.png",
+        "background3_image.png",
+        "background4_image.png"
     ]
 
     QUESTION_IMAGE_FILENAMES = [
-        "question1.png",
-        "question2.png",
-        "question3.png",
-        "question4.png",
-        "question5.png"
+        "question1_image.png",
+        "question2_image.png",
+        "question3_image.png",
+        "question4_image.png",
+        "question5_image.png"
     ]
 
     # animation settings
