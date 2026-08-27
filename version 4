@@ -169,7 +169,7 @@ class InvestmentQuiz:
 
 
         # Set the title displayed at the top of the window.
-        self.root.title("Investment Recommendation Suggester")
+        self.root.title("Investment Recommendation Quiz")
 
 
         # Set the size of the window.
@@ -1031,6 +1031,11 @@ class InvestmentQuiz:
             text="Welcome " + self.user_name + "!"
         )
 
+        # Fade the welcome message in.
+        self.fade_in_label(
+            self.title
+        )
+
         self.load_question()
 
 
@@ -1068,8 +1073,11 @@ class InvestmentQuiz:
             image=self.question_image
         )
 
-        self.question_image_label.pack(
-            pady=5
+        # Slide the question image into place instead of just
+        # snapping it straight onto the screen.
+        self.slide_in_label(
+            self.question_image_label,
+            target_pady=5
         )
 
 
@@ -1099,6 +1107,12 @@ class InvestmentQuiz:
 
         self.question_label.pack(
             pady=15
+        )
+
+        # Fade the question text in so each new question feels
+        # smoother rather than just appearing instantly.
+        self.fade_in_label(
+            self.question_label
         )
 
 
@@ -1140,6 +1154,112 @@ class InvestmentQuiz:
             side="left",
             padx=10
         )
+
+
+    # fade in function
+
+    # This function creates a simple fade-in animation for a
+    # label by gradually changing its text colour from light
+    # grey to black. Tkinter cannot fade images or true
+    # transparency, but fading the text colour gives a similar
+    # "appearing" effect without needing any extra libraries.
+    def fade_in_label(self, label, steps=12, delay=25):
+
+        # If this label already has an animation running (e.g. the
+        # user clicked Next very quickly), cancel it first so two
+        # animations don't fight over the same label.
+        existing_job = getattr(label, "_fade_job", None)
+
+        if existing_job is not None:
+            self.root.after_cancel(existing_job)
+
+        # Start colour (light grey, close to invisible on a
+        # white/light background) and end colour (black).
+        start_rgb = (245, 245, 245)
+        end_rgb = (0, 0, 0)
+
+        # This inner function runs one frame of the animation,
+        # then schedules the next frame using root.after().
+        def animate(step):
+
+            # Stop once we have reached the final step.
+            if step > steps:
+                label.config(fg="#000000")
+                label._fade_job = None
+                return
+
+            # Work out how far through the animation we are (0 to 1).
+            fraction = step / steps
+
+            # Blend the start and end colours together based on
+            # how far through the animation we are.
+            red = int(start_rgb[0] + (end_rgb[0] - start_rgb[0]) * fraction)
+            green = int(start_rgb[1] + (end_rgb[1] - start_rgb[1]) * fraction)
+            blue = int(start_rgb[2] + (end_rgb[2] - start_rgb[2]) * fraction)
+
+            # Convert the blended colour into a hex code Tkinter understands.
+            colour = "#%02x%02x%02x" % (red, green, blue)
+
+            # Apply the colour to the label.
+            label.config(fg=colour)
+
+            # Schedule the next frame of the animation and remember
+            # the job id so it can be cancelled if needed.
+            label._fade_job = self.root.after(
+                delay,
+                lambda: animate(step + 1)
+            )
+
+        # Start the animation from step 0 (fully faded out).
+        animate(0)
+
+
+    # slide in function
+
+    # This function creates a simple slide-in animation for a
+    # widget by moving it upward into place while it fades in.
+    # It is used for the question image so the screen feels
+    # more dynamic when a new question loads.
+    def slide_in_label(self, label, target_pady=5, steps=10, delay=20):
+
+        # Cancel any slide animation already running on this label,
+        # so quickly clicking Next/Back doesn't cause two animations
+        # to run at once.
+        existing_job = getattr(label, "_slide_job", None)
+
+        if existing_job is not None:
+            self.root.after_cancel(existing_job)
+
+        # Temporarily hide the label so we can animate it appearing.
+        label.pack_forget()
+
+        # This inner function runs one frame of the slide animation.
+        def animate(step):
+
+            if step > steps:
+
+                # Snap to the final resting position.
+                label.pack(pady=target_pady)
+                label._slide_job = None
+
+                return
+
+            # Start further down (larger pady) and move up to the
+            # target pady as the animation progresses.
+            extra_gap = int((steps - step) * 4)
+
+            label.pack_forget()
+
+            label.pack(
+                pady=target_pady + extra_gap
+            )
+
+            label._slide_job = self.root.after(
+                delay,
+                lambda: animate(step + 1)
+            )
+
+        animate(0)
 
 
     # progress bar function
@@ -1709,6 +1829,11 @@ class InvestmentQuiz:
         # Display the results with less spacing.
         self.question_label.pack(
             pady=2
+        )
+
+        # Fade the results text in for a smoother reveal.
+        self.fade_in_label(
+            self.question_label
         )
 
 
