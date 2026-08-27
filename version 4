@@ -169,7 +169,7 @@ class InvestmentQuiz:
 
 
         # Set the title displayed at the top of the window.
-        self.root.title("Investment Recommendation Quiz")
+        self.root.title("Investment Recommendation Suggester")
 
 
         # Set the size of the window.
@@ -184,13 +184,35 @@ class InvestmentQuiz:
         )
 
 
-        # BACKGROUND IMAGE
+        # BACKGROUND IMAGES
+
+        # Store the filenames for all of the background images
+        # the user is allowed to choose between.
+        #
+        # You can add more filenames to this list if you want
+        # more than 4 backgrounds - just make sure the image
+        # file is in the same folder as this program.
+        self.background_filenames = [
+            "background.png",
+            "background2.png",
+            "background3.png",
+            "background4.png"
+        ]
+
+        # Store the full file path for each background image.
+        self.background_paths = [
+            os.path.join(self.folder, filename)
+            for filename in self.background_filenames
+        ]
+
+        # Keep track of which background is currently selected.
+        # 0 means the first background in the list.
+        self.current_background_index = 0
 
         # Find the background image inside the same folder.
-        background_path = os.path.join(
-            self.folder,
-            "background.png"
-        )
+        background_path = self.background_paths[
+            self.current_background_index
+        ]
 
         # Load the background image.
         self.background_image = tk.PhotoImage(
@@ -579,6 +601,24 @@ class InvestmentQuiz:
         )
 
 
+        # background button
+
+        # create a button that opens the background picker window
+        self.background_button = tk.Button(
+            self.root,
+            text="Change Background",
+            command=self.open_background_picker,
+            font=("Arial", 11)
+        )
+
+        # keep the background button visible at the bottom of every screen,
+        # right next to the music button
+        self.background_button.pack(
+            side="bottom",
+            pady=10
+        )
+
+
     # music function
 
     # this function starts the background music
@@ -700,6 +740,179 @@ class InvestmentQuiz:
 
             # turn the music on
             self.start_music()
+
+
+    # background picker function
+
+    # this function opens a small pop-up window that lets the
+    # user choose which background image they want to use
+    def open_background_picker(self):
+
+        # Create a new pop-up window on top of the main window.
+        picker_window = tk.Toplevel(
+            self.root
+        )
+
+        picker_window.title(
+            "Choose a Background"
+        )
+
+        picker_window.geometry(
+            "300x600"
+        )
+
+        # Stop the user resizing the pop-up window.
+        picker_window.resizable(
+            False,
+            False
+        )
+
+        # Make the pop-up stay in front of the main window.
+        picker_window.transient(
+            self.root
+        )
+
+
+        # Add a heading label inside the pop-up window.
+        heading = tk.Label(
+            picker_window,
+            text="Select a background image:",
+            font=("Arial", 13)
+        )
+
+        heading.pack(
+            pady=10
+        )
+
+
+        # This list keeps the small preview images in memory so
+        # Tkinter does not delete them while the window is open.
+        self.background_previews = []
+
+
+        # Create a small thumbnail button for each background image.
+        for index, path in enumerate(
+            self.background_paths
+        ):
+
+            # Check the background image file actually exists
+            # before trying to load it.
+            if not os.path.exists(
+                path
+            ):
+
+                # Skip missing files instead of crashing, and let
+                # the user know it could not be found.
+                missing_label = tk.Label(
+                    picker_window,
+                    text=self.background_filenames[index] +
+                    " not found",
+                    font=("Arial", 10),
+                    fg="red"
+                )
+
+                missing_label.pack(
+                    pady=5
+                )
+
+                continue
+
+
+            # Load a small preview version of the background image.
+            preview_image = tk.PhotoImage(
+                file=path
+            )
+
+            # Shrink the preview so four images fit on screen.
+            preview_image = preview_image.subsample(
+                10,
+                10
+            )
+
+            # Keep a reference so the image is not garbage collected.
+            self.background_previews.append(
+                preview_image
+            )
+
+
+            # Create a button showing the thumbnail. Clicking it
+            # selects that background image.
+            #
+            # "index=index" is used to lock in the current value of
+            # index for this button, since the loop variable changes.
+            preview_button = tk.Button(
+                picker_window,
+                image=preview_image,
+                text=self.background_filenames[index],
+                compound="top",
+                font=("Arial", 9),
+                command=lambda index=index: self.change_background(
+                    index,
+                    picker_window
+                )
+            )
+
+            preview_button.pack(
+                pady=8
+            )
+
+
+        # Add a close button so the user can dismiss the window
+        # without changing the background.
+        close_button = tk.Button(
+            picker_window,
+            text="Close",
+            command=picker_window.destroy,
+            font=("Arial", 10)
+        )
+
+        close_button.pack(
+            pady=10
+        )
+
+
+    # change background function
+
+    # this function swaps the main window's background image
+    # to the one the user picked
+    def change_background(self, index, picker_window):
+
+        # Get the file path for the background the user picked.
+        chosen_path = self.background_paths[
+            index
+        ]
+
+        try:
+
+            # Load the full-size background image.
+            self.background_image = tk.PhotoImage(
+                file=chosen_path
+            )
+
+            # Update the background label to show the new image.
+            self.background_label.config(
+                image=self.background_image
+            )
+
+            # Remember which background is currently selected.
+            self.current_background_index = index
+
+        except Exception as error:
+
+            # If the image could not be loaded, warn the user
+            # instead of crashing the program.
+            messagebox.showwarning(
+                "Background Error",
+                "That background image could not be loaded.\n\n" +
+                str(error)
+            )
+
+            return
+
+
+        # Close the picker window now that a background has
+        # been chosen.
+        picker_window.destroy()
 
 
     # close program function
