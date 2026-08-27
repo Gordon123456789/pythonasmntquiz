@@ -242,7 +242,7 @@ class InvestmentQuiz:
         # Create a label for the title.
         self.title = tk.Label(
             self.root,
-            text="Investment Recommendation Quiz",
+            text="Investment Recommendation Suggester",
             font=("Arial", 20)
         )
 
