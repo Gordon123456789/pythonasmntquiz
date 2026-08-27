@@ -185,7 +185,7 @@ class InvestmentQuiz:
         # Set the size of the window.
         # 600 = width
         # 740 = height
-        self.root.geometry("600x740")
+        self.root.geometry("600x800")
 
 
         # Find the folder where the Python file is located.
@@ -605,11 +605,12 @@ class InvestmentQuiz:
         )
 
 
-        # put the disclaimer near the bottom of the window
-        self.disclaimer.pack(
-            side="bottom",
-            pady=5
-        )
+        # NOTE: The disclaimer is intentionally NOT packed here.
+        # It has no background image behind it, so packing it while
+        # it's still empty just shows up as a plain grey box on the
+        # start screen. It only gets packed (in show_results) once
+        # it actually has text to display, and gets hidden again
+        # in restart_quiz.
 
 
         # Start button
@@ -1794,8 +1795,7 @@ class InvestmentQuiz:
 
     # This function adds the current quiz attempt to the user's
     # profile history inside profiles.json. Profiles are matched
-    # by name, using lowercase so "John" and "john" are treated
-    # as the same person.
+    # by name, using lowercase so "John" and "john" are treated as the same person.
     def save_profile_entry(self):
 
         # Load whatever profile history already exists.
@@ -1871,8 +1871,7 @@ class InvestmentQuiz:
     def view_history(self):
 
         # This button is only ever visible on the welcome screen,
-        # at the same time as the name and password boxes, so we
-        # can read directly from them.
+        # at the same time as the name and password boxes, so we can read directly from them.
         username = self.name_entry.get().strip()
 
         password = self.password_entry.get().strip()
@@ -1918,9 +1917,8 @@ class InvestmentQuiz:
             return
 
 
-        # A password is required to view an existing profile's
-        # history, so other people can't look up someone else's
-        # results just by knowing their name.
+        # A password is required to view an existing profile's history 
+        # so other people can't look up someone else's results just by knowing their name.
         if password == "":
 
             messagebox.showwarning(
@@ -2250,6 +2248,10 @@ class InvestmentQuiz:
             text=""
         )
 
+        # Hide the disclaimer again so it doesn't show as an
+        # empty grey box on the start screen.
+        self.disclaimer.pack_forget()
+
 
         # Change title back.
         self.title.config(
@@ -2457,6 +2459,14 @@ class InvestmentQuiz:
         self.disclaimer.config(
             text="For educational purposes only. Not financial advice.",
             font=("Arial", 8)
+        )
+
+        # Show the disclaimer now that it has text - it stays
+        # hidden the rest of the time so it doesn't appear as an
+        # empty grey box on the start screen.
+        self.disclaimer.pack(
+            side="bottom",
+            pady=5
         )
 
 
