@@ -10,6 +10,16 @@ from tkinter import messagebox
 # helps find image file
 import os
 
+# Import json so we can store user profiles and their quiz history
+import json
+
+# Import hashlib so we can store passwords as secure hashes
+# instead of as plain readable text
+import hashlib
+
+# Import datetime so we can timestamp each saved result
+import datetime
+
 # Import matplotlib to create the investment allocation chart
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -169,7 +179,7 @@ class InvestmentQuiz:
 
 
         # Set the title displayed at the top of the window.
-        self.root.title("Investment Recommendation Suggester")
+        self.root.title("Investment Recommendation Quiz")
 
 
         # Set the size of the window.
@@ -181,6 +191,17 @@ class InvestmentQuiz:
         # Find the folder where the Python file is located.
         self.folder = os.path.dirname(
             os.path.abspath(__file__)
+        )
+
+
+        # PROFILES
+
+        # Build the full path to the profiles file. This file
+        # stores every user's quiz history as JSON so returning
+        # users can look back at their past results.
+        self.profiles_path = os.path.join(
+            self.folder,
+            "profiles.json"
         )
 
 
@@ -242,7 +263,7 @@ class InvestmentQuiz:
         # Create a label for the title.
         self.title = tk.Label(
             self.root,
-            text="Investment Recommendation Suggester",
+            text="Investment Recommendation Quiz",
             font=("Arial", 20)
         )
 
@@ -363,6 +384,30 @@ class InvestmentQuiz:
         )
 
         self.income_entry.pack(pady=5)
+
+
+        # Create a label asking the user for a password.
+        # This password protects their profile so other people
+        # can't view their results using their name.
+        self.password_label = tk.Label(
+            self.root,
+            text="Enter a password (used to protect your results):",
+            font=("Arial", 12)
+        )
+
+        self.password_label.pack()
+
+
+        # Create a box where the user can enter their password.
+        # show="*" hides the characters as they are typed, the
+        # same way a normal password box works.
+        self.password_entry = tk.Entry(
+            self.root,
+            font=("Arial", 12),
+            show="*"
+        )
+
+        self.password_entry.pack(pady=5)
 
 
         # Store the paths for each question image.
@@ -580,6 +625,23 @@ class InvestmentQuiz:
 
         self.start_button.pack(
             pady=15
+        )
+
+
+        # view history button
+
+        # Create a button that lets a returning user look up their
+        # past quiz results, using the name they've typed above
+        # as their profile name.
+        self.view_history_button = tk.Button(
+            self.root,
+            text="View My History",
+            command=self.view_history,
+            font=("Arial", 11)
+        )
+
+        self.view_history_button.pack(
+            pady=5
         )
 
 
@@ -1012,6 +1074,38 @@ class InvestmentQuiz:
             return
 
 
+        # gets the user's password from the entry box
+        password = self.password_entry.get().strip()
+
+        # checks if the user has left the password entry box empty
+        if password == "":
+            messagebox.showwarning(
+                "No Password",
+                "Please enter a password. If this is your first "
+                "time using this name, this password will be used "
+                "to protect your results in future."
+            )
+            return
+
+
+        # checks that the password is at least 6 characters long
+        if len(password) < 6:
+            messagebox.showwarning(
+                "Password Too Short",
+                "Your password must be at least 6 characters long."
+            )
+            return
+
+
+        # Check this name/password combination against the saved
+        # profiles before letting the user continue.
+        if not self.check_login(self.user_name, password):
+
+            # check_login() already shows a warning message box
+            # explaining what went wrong, so we just stop here.
+            return
+
+
         # hides inputs after user details are accepted
         self.name_label.pack_forget()
         self.name_entry.pack_forget()
@@ -1022,7 +1116,13 @@ class InvestmentQuiz:
         self.income_label.pack_forget()
         self.income_entry.pack_forget()
 
+        self.password_label.pack_forget()
+        self.password_entry.pack_forget()
+
         self.start_button.pack_forget()
+
+        # Hide the view history button now that the quiz is starting.
+        self.view_history_button.pack_forget()
 
         # Hide the user details image when the quiz starts.
         self.image_label.pack_forget()
@@ -1513,6 +1613,476 @@ class InvestmentQuiz:
         )
 
 
+    # hash password function
+
+    # This function turns a plain text password into a hash - a
+    # scrambled, fixed-length code that always looks the same for
+    # the same password, but cannot be reversed back into the
+    # original password. We store this hash instead of storing
+    # the actual password, so the password itself is never saved
+    # anywhere in the file.
+    def hash_password(self, password):
+
+        return hashlib.sha256(
+            password.encode("utf-8")
+        ).hexdigest()
+
+
+    # ensure profile format function
+
+    # Older versions of this program saved each profile as a
+    # plain list of past attempts. This function checks for that
+    # old format and converts it into the new format, which also
+    # stores a password hash. This means the program won't crash
+    # if it is run using a profiles.json file saved by an older
+    # version of the code.
+    def ensure_profile_format(self, profiles, profile_key):
+
+        if profile_key in profiles and isinstance(
+            profiles[profile_key],
+            list
+        ):
+
+            profiles[profile_key] = {
+                "password_hash": None,
+                "history": profiles[profile_key]
+            }
+
+        return profiles
+
+
+    # check login function
+
+    # This function checks a name and password combination
+    # against the saved profiles, and creates a new password
+    # protected profile the first time a name is used.
+    #
+    # Returns True if the user is allowed to continue, and False
+    # if they should not be (showing a suitable warning message
+    # in that case).
+    def check_login(self, username, password):
+
+        profiles = self.load_profiles()
+
+        profile_key = username.lower()
+
+        # Convert any old-format data for this profile first.
+        profiles = self.ensure_profile_format(
+            profiles,
+            profile_key
+        )
+
+
+        # If this name has never been used before, create a new
+        # profile for it and protect it with the password that
+        # was just entered.
+        if profile_key not in profiles:
+
+            profiles[profile_key] = {
+                "password_hash": self.hash_password(password),
+                "history": []
+            }
+
+            self.save_profiles(
+                profiles
+            )
+
+            return True
+
+
+        stored_hash = profiles[profile_key].get(
+            "password_hash"
+        )
+
+
+        # If an older profile exists with no password saved yet,
+        # the first person to log in with the correct name claims
+        # it by setting this password on it.
+        if stored_hash is None:
+
+            profiles[profile_key]["password_hash"] = self.hash_password(
+                password
+            )
+
+            self.save_profiles(
+                profiles
+            )
+
+            return True
+
+
+        # Otherwise, this name already has a password - check that
+        # the password entered matches it.
+        if stored_hash != self.hash_password(password):
+
+            messagebox.showwarning(
+                "Incorrect Password",
+                "That password doesn't match the one saved for \"" +
+                username +
+                "\".\n\nIf this isn't your name, please use a "
+                "different one."
+            )
+
+            return False
+
+
+        return True
+
+
+    # load profiles function
+
+    # This function reads the profiles.json file and returns it
+    # as a dictionary. If the file doesn't exist yet, or the file
+    # is damaged/unreadable, an empty dictionary is returned so
+    # the program can keep running instead of crashing.
+    def load_profiles(self):
+
+        if not os.path.exists(
+            self.profiles_path
+        ):
+
+            return {}
+
+
+        try:
+
+            with open(
+                self.profiles_path,
+                "r"
+            ) as file:
+
+                return json.load(file)
+
+
+        except (OSError, json.JSONDecodeError):
+
+            # If the file can't be read or the JSON is corrupted,
+            # treat it as if there were no saved profiles.
+            return {}
+
+
+    # save profiles function
+
+    # This function writes the whole profiles dictionary back to
+    # profiles.json.
+    def save_profiles(self, profiles):
+
+        try:
+
+            with open(
+                self.profiles_path,
+                "w"
+            ) as file:
+
+                json.dump(
+                    profiles,
+                    file,
+                    indent=2
+                )
+
+
+        except OSError as error:
+
+            messagebox.showerror(
+                "Save Failed",
+                "Your profile history could not be saved.\n\n" +
+                str(error)
+            )
+
+
+    # save profile entry function
+
+    # This function adds the current quiz attempt to the user's
+    # profile history inside profiles.json. Profiles are matched
+    # by name, using lowercase so "John" and "john" are treated
+    # as the same person.
+    def save_profile_entry(self):
+
+        # Load whatever profile history already exists.
+        profiles = self.load_profiles()
+
+        # Use a lowercase version of the name as the lookup key,
+        # so names are matched regardless of capitalisation.
+        profile_key = self.user_name.lower()
+
+        # Convert any old-format data for this profile first.
+        profiles = self.ensure_profile_format(
+            profiles,
+            profile_key
+        )
+
+        # By the time this function runs the user has already
+        # logged in through check_login(), so their profile should
+        # already exist. This is just a safety net in case it
+        # doesn't, so saving never crashes the program.
+        if profile_key not in profiles:
+
+            profiles[profile_key] = {
+                "password_hash": None,
+                "history": []
+            }
+
+
+        # Work out the risk profile again so it can be stored
+        # alongside this attempt.
+        if self.score <= 7:
+
+            profile = "Conservative"
+
+        elif self.score <= 11:
+
+            profile = "Moderate"
+
+        else:
+
+            profile = "Growth"
+
+
+        # Build a record of this quiz attempt.
+        entry = {
+            "date": datetime.datetime.now().strftime(
+                "%Y-%m-%d %H:%M"
+            ),
+            "display_name": self.user_name,
+            "age": self.user_age,
+            "income": self.user_income,
+            "score": self.score,
+            "profile": profile
+        }
+
+
+        # Add this attempt to the user's history.
+        profiles[profile_key]["history"].append(
+            entry
+        )
+
+
+        # Save the updated profiles back to the file.
+        self.save_profiles(
+            profiles
+        )
+
+
+    # view history function
+
+    # This function opens a pop-up window showing all of the
+    # past quiz attempts saved for whichever name is currently
+    # typed into the name entry box.
+    def view_history(self):
+
+        # This button is only ever visible on the welcome screen,
+        # at the same time as the name and password boxes, so we
+        # can read directly from them.
+        username = self.name_entry.get().strip()
+
+        password = self.password_entry.get().strip()
+
+
+        # Make sure a name has actually been entered.
+        if username == "":
+
+            messagebox.showwarning(
+                "No Name",
+                "Please enter your name first so we know whose "
+                "history to look up."
+            )
+
+            return
+
+
+        # Load all saved profiles.
+        profiles = self.load_profiles()
+
+        profile_key = username.lower()
+
+        # Convert any old-format data for this profile first.
+        profiles = self.ensure_profile_format(
+            profiles,
+            profile_key
+        )
+
+
+        # Check whether this name has any saved history at all.
+        if profile_key not in profiles or len(
+            profiles[profile_key]["history"]
+        ) == 0:
+
+            messagebox.showinfo(
+                "No History Found",
+                "No past results were found for \"" +
+                username +
+                "\".\n\nComplete the quiz and click Save Results "
+                "to start building your history."
+            )
+
+            return
+
+
+        # A password is required to view an existing profile's
+        # history, so other people can't look up someone else's
+        # results just by knowing their name.
+        if password == "":
+
+            messagebox.showwarning(
+                "No Password",
+                "Please enter the password for \"" +
+                username +
+                "\" to view their history."
+            )
+
+            return
+
+
+        stored_hash = profiles[profile_key].get(
+            "password_hash"
+        )
+
+        if stored_hash is not None and stored_hash != self.hash_password(
+            password
+        ):
+
+            messagebox.showwarning(
+                "Incorrect Password",
+                "That password doesn't match the one saved for \"" +
+                username +
+                "\"."
+            )
+
+            return
+
+
+        # Create the pop-up history window.
+        history_window = tk.Toplevel(
+            self.root
+        )
+
+        history_window.title(
+            username + "'s History"
+        )
+
+        history_window.geometry(
+            "450x400"
+        )
+
+        history_window.transient(
+            self.root
+        )
+
+
+        # Heading label.
+        heading = tk.Label(
+            history_window,
+            text="Past Results for " + username,
+            font=("Arial", 13, "bold")
+        )
+
+        heading.pack(
+            pady=10
+        )
+
+
+        # Create a frame to hold the scrollable text area.
+        text_frame = tk.Frame(
+            history_window
+        )
+
+        text_frame.pack(
+            fill="both",
+            expand=True,
+            padx=10,
+            pady=5
+        )
+
+
+        # Add a scrollbar for when there are lots of past attempts.
+        scrollbar = tk.Scrollbar(
+            text_frame
+        )
+
+        scrollbar.pack(
+            side="right",
+            fill="y"
+        )
+
+
+        # Create the text widget that will list every attempt.
+        history_text = tk.Text(
+            text_frame,
+            wrap="word",
+            yscrollcommand=scrollbar.set,
+            font=("Arial", 10)
+        )
+
+        history_text.pack(
+            side="left",
+            fill="both",
+            expand=True
+        )
+
+        scrollbar.config(
+            command=history_text.yview
+        )
+
+
+        # Show the most recent attempt first.
+        entries = list(
+            reversed(
+                profiles[profile_key]["history"]
+            )
+        )
+
+        for entry in entries:
+
+            history_text.insert(
+                "end",
+                "Date: " + entry.get("date", "Unknown") + "\n"
+            )
+
+            history_text.insert(
+                "end",
+                "Age: " + str(entry.get("age", "")) + "\n"
+            )
+
+            history_text.insert(
+                "end",
+                "Income: $" + str(entry.get("income", "")) + "\n"
+            )
+
+            history_text.insert(
+                "end",
+                "Risk Profile: " + entry.get("profile", "") + "\n"
+            )
+
+            history_text.insert(
+                "end",
+                "Score: " + str(entry.get("score", "")) + "\n"
+            )
+
+            history_text.insert(
+                "end",
+                "-" * 40 + "\n\n"
+            )
+
+
+        # Stop the user from editing the history text.
+        history_text.config(
+            state="disabled"
+        )
+
+
+        # Close button.
+        close_button = tk.Button(
+            history_window,
+            text="Close",
+            command=history_window.destroy,
+            font=("Arial", 10)
+        )
+
+        close_button.pack(
+            pady=10
+        )
+
+
     # save results function
 
     # This function saves the user's details and quiz result
@@ -1605,6 +2175,12 @@ class InvestmentQuiz:
             )
 
             return
+
+
+        # Also save this attempt into the user's JSON profile
+        # history, so it can be looked up later with the
+        # View My History button.
+        self.save_profile_entry()
 
 
         # Tell the user that their results have been saved.
@@ -1724,9 +2300,26 @@ class InvestmentQuiz:
         )
 
 
+        self.password_label.pack()
+
+        self.password_entry.delete(
+            0,
+            tk.END
+        )
+
+        self.password_entry.pack(
+            pady=5
+        )
+
+
         # Show start button.
         self.start_button.pack(
             pady=15
+        )
+
+        # Show the view history button again.
+        self.view_history_button.pack(
+            pady=5
         )
 
 
