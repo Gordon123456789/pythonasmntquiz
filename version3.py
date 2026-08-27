@@ -1152,7 +1152,7 @@ class InvestmentQuiz:
         # folder as this script.
         results_path = os.path.join(
             self.folder,
-            "investment_results.txt"
+            "investment_results_version3.txt"
         )
 
 
