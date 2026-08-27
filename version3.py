@@ -207,7 +207,7 @@ class InvestmentQuiz:
         # Find the image inside the same folder.
         image_path = os.path.join(
             self.folder,
-            "image.png"
+            "welcome_image.png"
         )
 
 
@@ -238,7 +238,7 @@ class InvestmentQuiz:
         # Find the results image.
         self.results_image_path = os.path.join(
             self.folder,
-            "results.png"
+            "results_image.png"
         )
 
 
@@ -316,27 +316,27 @@ class InvestmentQuiz:
 
             os.path.join(
                 self.folder,
-                "question1.png"
+                "question1_image.png"
             ),
 
             os.path.join(
                 self.folder,
-                "question2.png"
+                "question2_image.png"
             ),
 
             os.path.join(
                 self.folder,
-                "question3.png"
+                "question3_image.png"
             ),
 
             os.path.join(
                 self.folder,
-                "question4.png"
+                "question4_image.png"
             ),
 
             os.path.join(
                 self.folder,
-                "question5.png"
+                "question5_image.png"
             )
         ]
 
